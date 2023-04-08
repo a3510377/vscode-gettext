@@ -1,0 +1,85 @@
+name: gettext
+scopeName: source.po
+patterns:
+  - begin: ^(?=(msgid(_plural)?|msgctxt)\s*\"[^"])|^\s*$
+    end: \Z
+    patterns:
+      - include: '#body'
+
+  - include: '#comments'
+
+  - name: comment.line.number-sign.po
+    match: ^msg(id|str)\s+""\s*$
+
+  - name: meta.header.po
+    match: ^"(?:([^\s:]+)(:)\s+)?([^"]*)"\s*$
+    captures:
+      '1': { name: constant.language.po }
+      '2': { name: punctuation.separaor.key-value.po }
+      '3': { name: string.other.po }
+
+repository:
+  body:
+    patterns:
+      - name: meta.scope.msgid.po
+        begin: (msgid(_plural)?)\s+
+        end: ^(?!")
+        beginCaptures:
+          '1': { name: keyword.control.msgid.po }
+        patterns:
+          - include: '#strings'
+      - name: meta.scope.msgstr.po
+        begin: ^(msgstr)(?:(\[)(\d+)(\]))?\s+
+        end: ^(?!")
+        beginCaptures:
+          '1': { name: keyword.control.msgstr.po }
+          '2': { name: keyword.control.msgstr.po }
+          '3': { name: constant.numeric.po }
+          '4': { name: keyword.control.msgstr.po }
+        patterns:
+          - include: '#strings'
+
+  strings:
+    name: string.quoted.double.po
+    begin: '"'
+    end: '"'
+    patterns:
+      - name: constant.character.escape.po
+        match: \\(\\|")
+
+  comments:
+    # base is translator-comments
+    name: comment.line.number-sign.po
+    begin: '^#'
+    end: $
+    patterns:
+      # #.
+      # extracted-comments
+      - name: comment.line.number-sign.extracted.po
+        begin: \.\s+
+        end: $
+
+      # #|
+      # msgid previous-untranslated-string
+      - name: comment.line.number-sign.previous.po
+        begin: '\|\s*'
+        end: $
+
+      # #:
+      # reference...
+      - name: comment.line.number-sign.reference.po
+        begin: :\s*
+        end: $
+        patterns:
+          - match: \S+:[\d;]*
+            name: storage.type.class.po
+
+      # #,
+      # flag
+      - name: comment.line.number-sign.flag.po
+        begin: ",\\s+"
+        end: $
+        patterns:
+          # https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html
+          - match: (?:\G|,\s*)((?:fuzzy)|(?:no-)?(?:c|objc|python|python-brace|java|java-printf|csharp|javascript|scheme|lisp|elisp|librep|ruby|sh|awk|lua|object-pascal|smalltalk|qt|qt-plural|kde|boost|tcl|perl|perl-brace|php|gcc-internal|gfc-internal|ycp)-format)
+            captures: { '1': { name: entity.name.type.flag.po } }
