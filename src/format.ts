@@ -16,44 +16,65 @@ const legend = new SemanticTokensLegend([
 ]);
 
 // majority reference: https://github.com/microsoft/vscode/tree/main/extensions
+//                     https://github.com/vslavik/poedit
 const langFormat: Record<string, RegExp> = {
-  c: /%(\d+\$)?[#0\- +']*[,;:_]?((-?\d+)|\*(-?\d+\$)?)?(\.((-?\d+)|\*(-?\d+\$)?)?)?(hh|h|ll|l|j|t|z|q|L|vh|vl|v|hv|hl)?[diouxXDOUeEfFgGaACcSspn%]/g,
-
-  // objc: //g,
-
-  // https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting
+  // old style https://docs.python.org/2/library/stdtypes.html#string-formatting
+  // new style https://docs.python.org/3/library/string.html#format-string-syntax
+  // ((%(\(\w+\))?[-+ #0]?(\d+|\*)?(\.(\d+|\*))?[hlL]?[diouxXeEfFgGcrs%]))|(\{[\w.-:,]+\})
   python: /%(\([\w\s]*\))?[#0+\- ]*[diouxXeEfFgGcrs%]/g,
 
   // https://peps.python.org/pep-3101/
   'python-brace':
     /{{|}}|({\w*(\.[[:alpha:]_]\w*|\[[^\]'"]+\])*(?<arg>(![rsa])?(:\w?[><=^]?[ +-]?#?\d*,?(\.\d+)?[bcdeEfFgGnosxX%]?))?})/g,
 
-  // java: //g,
-  // 'java-printf': //g,
-  // csharp: //g,
   javascript: /%(\([\w\s]*\))?[#0+\- ]*[diouxXeEfFgGcrs%]/g,
-  // scheme: //g,
-  // lisp: //g,
-  // elisp: //g,
-  // librep: //g,
-  // ruby: //g,
+
+  /* ------------------------------------- */
+  /* The following is correct confirmation */
+  /* ------------------------------------- */
+
+  // http://en.cppreference.com/w/cpp/io/c/fprintf,
+  // http://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html
+  // %(\d+\$)?[-+ #0]{0,5}(\d+|\*)?(\.(\d+|\*))?(hh|ll|[hljztL])?[%csdioxXufFeEaAgGnp])
+  c: /%(\d+\$)?[#0\- +']*[,;:_]?((-?\d+)|\*(-?\d+\$)?)?(\.((-?\d+)|\*(-?\d+\$)?)?)?(hh|h|ll|l|j|t|z|q|L|vh|vl|v|hv|hl)?[diouxXDOUeEfFgGaACcSspn%]/g,
+
+  // ruby-format per https://ruby-doc.org/core-2.7.1/Kernel.html#method-i-sprintf
+  ruby: /(%(\d+\$)?[-+ #0]{0,5}(\d+|\*)?(\.(\d+|\*))?(hh|ll|[hljztL])?[%csdioxXufFeEaAgGnp])/g,
+
+  // Lua
+  lua: /(%[- 0]*\d*(\.\d+)?[sqdiouXxAaEefGgc])/g,
+
+  // Pascal per https://www.freepascal.org/docs-html/rtl/sysutils/format.html
+  'object-pascal':
+    /(%(\*:|\d*:)?-?(\*|\d+)?(\.\*|\.\d+)?[dDuUxXeEfFgGnNmMsSpP])/g,
+
+  // Qt and KDE formats
+  qt: /(%L?(\d\d?|n))/g,
+  kde: /(%L?(\d\d?|n))/g,
+
+  // http://php.net/manual/en/function.sprintf.php
+  php: /(%(\d+\$)?[-+]{0,2}([ 0]|'.)?-?\d*(\..?\d+)?[%bcdeEfFgGosuxX])/g,
+  'gcc-internal':
+    /(?!%')(?!%")%(\d+\$)?[#0\- +']*[,;:_]?((-?\d+)|\*(-?\d+\$)?)?(\.((-?\d+)|\*(-?\d+\$)?)?)?(hh|h|ll|l|j|t|z|q|L|vh|vl|v|hv|hl)?[diouxXDOUeEfFgGaACcSspn%]/g,
+
   // sh: //g,
   // awk: //g,
-  // lua: //g,
-  // 'object-pascal': //g,
-  // smalltalk: //g,
-  // qt: //g,
   // 'qt-plural': //g,
-  // kde: //g,
   // boost: //g,
   // tcl: //g,
   // perl: //g,
   // 'perl-brace': //g,
-  // php: //g,
-  'gcc-internal':
-    /(?!%')(?!%")%(\d+\$)?[#0\- +']*[,;:_]?((-?\d+)|\*(-?\d+\$)?)?(\.((-?\d+)|\*(-?\d+\$)?)?)?(hh|h|ll|l|j|t|z|q|L|vh|vl|v|hv|hl)?[diouxXDOUeEfFgGaACcSspn%]/g,
+  // smalltalk: //g,
   // 'gfc-internal': //g,
   // ycp: //g,
+  // scheme: //g,
+  // lisp: //g,
+  // elisp: //g,
+  // librep: //g,
+  // java: //g,
+  // 'java-printf': //g,
+  // csharp: //g,
+  // objc: //g,
 };
 
 const provider: vscodeDocumentSemanticTokensProvider = {
