@@ -83,7 +83,7 @@ const provider: vscodeDocumentSemanticTokensProvider = {
           nowFlags = langFormat[flag];
           break;
         }
-      } else if (line.startsWith('msgid')) {
+      } else if (/^(msg(id|str))/.test(line)) {
         const d = extract(line);
         const offset = line.length - d.length - 1;
         if (!nowFlags) continue;

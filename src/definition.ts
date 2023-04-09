@@ -20,7 +20,7 @@ export function getTextProvideDefinition(
       if (!files) return;
       const sourcePosition = new Position(+line - 1, 0);
 
-      return files.map((file) => ({ ...new Location(file, sourcePosition) }));
+      return files.map((file) => new Location(file, sourcePosition));
     });
   }
 }
