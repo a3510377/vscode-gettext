@@ -12,7 +12,7 @@
   "activationEvents": [
     "onLanguage:pot"
   ],
-  "main": "./out/gettext.js",
+  "main": "./out/main.js",
   "contributes": {
     "languages": [
       {
@@ -34,6 +34,30 @@
         "scopeName": "source.po",
         "path": "./syntaxes/po.tmLanguage.json"
       }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "po",
+        "scopes": {
+          "po-auto-format-placeholder": [
+            "constant.character.format.placeholder.other.po",
+            "meta.format.percent.po",
+            "string.quoted.single.po",
+            "meta.function-call.arguments.po",
+            "meta.function-call.po",
+            "source.po"
+          ],
+          "po-auto-storage-format": [
+            "storage.type.format.po",
+            "constant.character.format.placeholder.other.po",
+            "meta.format.brace.po",
+            "string.quoted.single.po",
+            "meta.function-call.arguments.po",
+            "meta.function-call.po",
+            "source.po"
+          ]
+        }
+      }
     ]
   },
   "scripts": {
@@ -46,6 +70,7 @@
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
+    "@types/lodash": "^4.14.192",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.77.0",
@@ -58,6 +83,8 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "lodash": "^4.17.21",
+    "pofile": "^1.1.4"
   }
 }

@@ -3,7 +3,9 @@ import {
   ExtensionContext,
   TextDocument,
   window,
+  workspace,
 } from 'vscode';
+import { throttle } from 'lodash';
 
 const underlineDecorationType = window.createTextEditorDecorationType({
   textDecoration: 'underline',
@@ -20,13 +22,25 @@ export const annotation = (ctx: ExtensionContext) => {
     if (!editor || !document || _current_doc !== document) return;
 
     const underlines: DecorationOptions[] = [];
-    editor?.setDecorations(underlineDecorationType, underlines);
+
+    editor.setDecorations(underlineDecorationType, underlines);
   };
   const update = () => {
     _current_doc = window.activeTextEditor?.document;
 
     refresh();
   };
+
+  const throttledUpdate = throttle(update, 800);
+
+  window.onDidChangeActiveTextEditor(throttledUpdate);
+  window.onDidChangeTextEditorSelection(throttledUpdate);
+  workspace.onDidChangeTextDocument((e) => {
+    if (e.document === window.activeTextEditor?.document) {
+      _current_doc = void 0;
+      throttledUpdate();
+    }
+  });
 
   // TODO
   // hover
