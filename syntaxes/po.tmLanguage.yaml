@@ -1,7 +1,8 @@
 name: gettext
 scopeName: source.po
 patterns:
-  - begin: ^(?=(msgid(_plural)?|msgctxt)\s*\"[^"])|^\s*$
+  # - begin: ^(?=(msgid(_plural)?|msgctxt)\s*\"[^"])|^\s*$
+  - begin: ^(?=(?:msgid(_plural)?|msgctxt)\s*"(?:[^"]|"\s+"))|^\s*$
     end: \Z
     patterns:
       - include: '#body'
@@ -12,7 +13,7 @@ patterns:
     match: ^msg(id|str)\s+""\s*$
 
   - name: meta.header.po
-    match: ^"(?:([^\s:]+)(:)\s+)?([^"]*)"\s*$
+    match: ^"(?:([^\s:]+)(:)\s+)?([^"]*)"
     captures:
       '1': { name: constant.language.po }
       '2': { name: punctuation.separaor.key-value.po }
@@ -28,6 +29,15 @@ repository:
           '1': { name: keyword.control.msgid.po }
         patterns:
           - include: '#strings'
+
+      - name: meta.scope.msgctxt.po
+        begin: (msgctxt)\s+
+        end: ^(?!")
+        beginCaptures:
+          '1': { name: keyword.control.msgctxt.po }
+        patterns:
+          - include: '#strings'
+
       - name: meta.scope.msgstr.po
         begin: ^(msgstr)(?:(\[)(\d+)(\]))?\s+
         end: ^(?!")
