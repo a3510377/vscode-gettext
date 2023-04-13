@@ -24,7 +24,7 @@ msgstr ""
 "X-Generator: Poedit 3.2.2\n"
 
 #: test.py:1
-#, c-format
+#, fuzzy, c-format
 msgid "found %d fatal error"
 msgstr "0 found %d fatal error"
 

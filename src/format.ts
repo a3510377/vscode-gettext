@@ -1,5 +1,8 @@
 import {
+  CancellationToken,
+  DocumentSemanticTokensProvider,
   ExtensionContext,
+  Position,
   ProviderResult,
   SemanticTokens,
   SemanticTokensBuilder,
@@ -16,6 +19,18 @@ const legend = new SemanticTokensLegend([
   'po-auto-format-placeholder',
   'po-auto-storage-format',
 ]);
+
+export const PREFIX_EXTRACTED_COMMENTS = '#. ';
+export const PREFIX_REFERENCES = '#: ';
+export const PREFIX_FLAGS = '#, ';
+// export const PREFIX_PREV_MSGID = '#| msgid';
+export const PREFIX_MSGCTXT = 'msgctxt "';
+export const PREFIX_MSGID = 'msgid "';
+export const PREFIX_MSGID_PLURAL = 'msgid_plural "';
+export const PREFIX_MSGSTR = 'msgstr "';
+export const PREFIX_MSGSTR_PLURAL = 'msgstr[';
+export const PREFIX_DELETED = '#~';
+export const PREFIX_DELETED_MSGID = '#~ msgid';
 
 const provider: vscodeDocumentSemanticTokensProvider = {
   provideDocumentSemanticTokens(
@@ -87,6 +102,93 @@ const provider: vscodeDocumentSemanticTokensProvider = {
   },
 };
 
+class GettextLanguageProvider implements DocumentSemanticTokensProvider {
+  async provideDocumentSemanticTokens(
+    document: TextDocument,
+    token: CancellationToken
+  ): Promise<SemanticTokens | null> {
+    const builder = new SemanticTokensBuilder(legend);
+
+    let dummy = '',
+      startPos = NaN;
+
+    const totalCount = document.lineCount;
+    for (let i = 0; i < document.lineCount; i++) {
+      let line = document.lineAt(i).text;
+
+      const getDeep = (start: string = '"', end: string = '"') => {
+        let data = '';
+        for (; i < totalCount; i++) {
+          line = document.lineAt(i + 1).text;
+
+          if (line.startsWith('\t')) line = line.substring(1);
+          if (line.startsWith(start) && line.endsWith(end))
+            data += extract(line);
+          else break;
+        }
+
+        return data || void 0;
+      };
+
+      const extractNowAndDeep = (start: string = '"', end: string = '"') => {
+        return extract(line) + (getDeep(start, end) || '');
+      };
+
+      const startWith = (start: string, base: string = line): boolean => {
+        if (!base.startsWith(start)) return false;
+
+        dummy = base.slice(start.length).trimEnd();
+        return true;
+      };
+
+      console.log(`${line}\n${extractPos(line)}\n-----`);
+      // extracted-comments (#. )
+      if (startWith(PREFIX_EXTRACTED_COMMENTS)) {
+      }
+      // reference (#: )
+      else if (startWith(PREFIX_REFERENCES)) {
+        // console.log(dummy);
+      }
+      // flag (#, )
+      else if (startWith(PREFIX_FLAGS)) {
+      }
+      // context (msgctxt ")
+      else if (startWith(PREFIX_MSGCTXT)) {
+      }
+      // untranslated-string (msgid ")
+      else if (startWith(PREFIX_MSGID)) {
+      }
+      // untranslated-string-plural (msgid_plural ")
+      else if (startWith(PREFIX_MSGID_PLURAL)) {
+      }
+
+      // translated-string (msgstr ")
+      PREFIX_MSGSTR;
+      // translated-string-case-N (msgstr[)
+      PREFIX_MSGSTR_PLURAL;
+
+      // (#~)
+      PREFIX_DELETED;
+      // (#~ msgid)
+      PREFIX_DELETED_MSGID;
+    }
+
+    const tokens = builder.build();
+    return tokens;
+  }
+}
+
+const extractPos = (data: string) => {
+  let pos = {};
+
+  console.log(data.split('"'));
+
+  // for (let [index, value] of Object.entries(data)) {
+  //   pos;
+  //   // (+index);
+  // }
+};
+
 const extract = (string: string) => {
   return string
     .trim()
@@ -114,6 +216,10 @@ const extract = (string: string) => {
 
 export function formatString(ctx: ExtensionContext) {
   ctx.subscriptions.push(
-    languages.registerDocumentSemanticTokensProvider('po', provider, legend)
+    languages.registerDocumentSemanticTokensProvider(
+      'po',
+      new GettextLanguageProvider(),
+      legend
+    )
   );
 }
