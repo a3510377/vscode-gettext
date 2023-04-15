@@ -14,7 +14,7 @@
     },
     {
       "name": "meta.header.po",
-      "match": "^\"(?:([^\\s:]+)(:)\\s+)?([^\"]*)\"",
+      "match": "^\\t?\"(?:([^\\s:]+)(:)\\s+)?([^\"]*)\"",
       "captures": {
         "1": { "name": "constant.language.po" },
         "2": { "name": "punctuation.separaor.key-value.po" },
