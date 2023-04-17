@@ -16,21 +16,35 @@ export enum ErrorCodeMessage {
 }
 
 export type ErrorCodeMessageKeys = keyof typeof ErrorCodeMessage;
+export interface ErrorDataType<
+  T extends ErrorCodeMessageKeys = ErrorCodeMessageKeys
+> {
+  value: T;
+  target: Uri;
+  message: typeof ErrorCodeMessage[T];
 
-export const summonErrorLink = (ID: ErrorCodeMessageKeys) => {
+  [k: string]: unknown;
+}
+
+export const summonErrorLink = (
+  ID: ErrorCodeMessageKeys,
+  options?: Record<string, unknown>
+) => {
   return {
     value: ID,
     target: Uri.parse(`${BASE_WIKI}#${ID}`),
     message: ErrorCodeMessage[ID as ErrorCodeMessageKeys],
+    ...options,
   };
 };
 
 export const summonDiagnostic = (
   ID: ErrorCodeMessageKeys,
   range: Range,
-  severity?: DiagnosticSeverity
+  severity?: DiagnosticSeverity,
+  options?: Record<string, unknown>
 ): Diagnostic => {
-  const error = summonErrorLink(ID);
+  const error = summonErrorLink(ID, options);
   const d = new Diagnostic(range, error.message, severity);
 
   d.source = 'vscode-gettext';

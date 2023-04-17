@@ -13,7 +13,11 @@ import {
   languages,
   workspace,
 } from 'vscode';
-import { ErrorCodeMessageKeys, summonDiagnostic } from './error_message';
+import {
+  ErrorCodeMessageKeys,
+  ErrorDataType,
+  summonDiagnostic,
+} from './error_message';
 
 export const PREFIX_EXTRACTED_COMMENTS = '#. ';
 export const PREFIX_REFERENCES = '#: ';
@@ -228,7 +232,11 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
       }
 
       if (S002) {
-        errors.push(summonDiagnostic('S002', new Range(i, 0, i, line.length)));
+        errors.push(
+          summonDiagnostic('S002', new Range(i, 0, i, line.length), void 0, {
+            nextID: msgidN,
+          })
+        );
       }
     }
     // reset msgidPlural and else data
@@ -255,22 +263,28 @@ const errorsHandler: Record<
     ) => void)
   | undefined
 > = {
-  // 重複定義 headers
   F001: undefined,
-  // 相同的 header name
   F002: undefined,
-  // Syntax error, expected msgstr[N] instead of msgstr "" due to previous occurrence of `msgid_plural`
-  S001(document, editor, diagnostic) {
-    // editor.replace(document, )
-    console.log(
-      document.getText(diagnostic.range).replace(/^(msgstr) (.*)/, '$1[0] $2')
-    );
 
-    editor.replace(document.uri, diagnostic.range, '');
+  S001(document, editor, diagnostic) {
+    editor.replace(
+      document.uri,
+      diagnostic.range,
+      document.getText(diagnostic.range).replace(/^(msgstr) (.*)/, `$1[0] $2`)
+    );
   },
-  // 複數格式含有錯誤的索引 (msgstr[N] 之 N 與上組不連貫)
-  S002: undefined,
-  S003(document, editor, diagnostic) {},
+  S002(document, editor, diagnostic) {
+    let errorData = diagnostic.code as ErrorDataType;
+
+    editor.replace(
+      document.uri,
+      diagnostic.range,
+      document
+        .getText(diagnostic.range)
+        .replace(/^(msgstr)\[\d+\] (.*)/, `$1[${errorData?.nextID || 0}] $2`)
+    );
+  },
+  S003: undefined,
 };
 
 export function errorHandler(ctx: ExtensionContext) {
@@ -291,7 +305,9 @@ export function errorHandler(ctx: ExtensionContext) {
       provideCodeActions(document, range, context, token) {
         const actions: CodeAction[] = [];
         for (const diagnostic of languages.getDiagnostics(document.uri)) {
-          const errorCode = diagnostic.code as ErrorCodeMessageKeys;
+          const errorData = diagnostic.code as ErrorDataType;
+          const errorCode = errorData.value;
+
           if (errorCode in errorsHandler && errorsHandler[errorCode]) {
             const quickFix = new CodeAction(
               `修復 ${errorCode}`,
