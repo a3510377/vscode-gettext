@@ -8,6 +8,8 @@ import {
   ExtensionContext,
   Position,
   Range,
+  SemanticTokensBuilder,
+  SemanticTokensLegend,
   TextDocument,
   WorkspaceEdit,
   languages,
@@ -18,6 +20,8 @@ import {
   ErrorDataType,
   summonDiagnostic,
 } from './error_message';
+import { extract } from './utils';
+import { langFormat } from './format-data';
 
 export const PREFIX_EXTRACTED_COMMENTS = '#. ';
 export const PREFIX_REFERENCES = '#: ';
@@ -31,33 +35,17 @@ export const PREFIX_MSGSTR_PLURAL = 'msgstr[';
 export const PREFIX_DELETED = '#~';
 export const PREFIX_DELETED_MSGID = '#~ msgid';
 
-const extract = (string: string) => {
-  return string
-    .trim()
-    .replace(/^[^"]*"|"$/g, '')
-    .replace(
-      /\\([abtnvfr'"\\?]|([0-7]{3})|x([0-9a-fA-F]{2}))/g,
-      (_, esc: string, oct: string, hex: string) => {
-        if (oct) return String.fromCharCode(parseInt(oct, 8));
-        if (hex) return String.fromCharCode(parseInt(hex, 16));
-
-        return (
-          {
-            a: '\x07',
-            b: '\b',
-            t: '\t',
-            n: '\n',
-            v: '\v',
-            f: '\f',
-            r: '\r',
-          }[esc] || esc
-        );
-      }
-    );
-};
+const legend = new SemanticTokensLegend([
+  'po-auto-format-placeholder',
+  'po-auto-storage-format',
+]);
 
 type Optional<T = string> = T | undefined;
-export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
+export const f = (
+  diagnostic: DiagnosticCollection | undefined,
+  tokenBuild: SemanticTokensBuilder | undefined,
+  document: TextDocument
+) => {
   const errors: Diagnostic[] = [];
 
   type PosData = {
@@ -72,6 +60,7 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
     msgctxt: Optional<PosData[]>;
   let msgidN = NaN;
   let headers: Optional<Record<string, string>>;
+  let nowFlags: Optional<RegExp>;
 
   const isEmpty = (data?: PosData[], strict = true) => {
     if (!data) return true;
@@ -82,6 +71,7 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
 
   const totalCount = document.lineCount;
   for (let i = 0; i < document.lineCount; i++) {
+    const oldIndex = i;
     let line = document.lineAt(i).text;
 
     const getDeep = (split?: string) => {
@@ -142,10 +132,24 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
     }
     // reference (#: )
     else if (line.startsWith(PREFIX_REFERENCES)) {
-      // console.log(dummy);
     }
     // flag (#, )
     else if (line.startsWith(PREFIX_FLAGS)) {
+      const flags = line
+        .replace(/^#,/, '')
+        .trim()
+        .split(',')
+        .map((flag) => flag.replace(/-format$/, ''));
+
+      nowFlags = void 0;
+      for (let flag of flags) {
+        if (flag.startsWith('no-')) continue;
+
+        if (flag in langFormat) {
+          nowFlags = langFormat[flag as keyof typeof langFormat];
+          break;
+        }
+      }
     }
     // context (msgctxt ")
     else if (line.startsWith(PREFIX_MSGCTXT)) msgctxt = nowAndDeep();
@@ -169,7 +173,6 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
       if (isEmpty(msgid) && isEmpty(msgidPlural) && isEmpty(msgctxt)) {
         if (headers) {
           nowAndDeep();
-          console.log(msgid);
 
           errors.push(
             summonDiagnostic(
@@ -209,34 +212,33 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
     else if (line.startsWith(PREFIX_MSGSTR_PLURAL)) {
       if (!msgidPlural) {
         errors.push(summonDiagnostic('S003', new Range(i, 0, i, line.length)));
-        continue;
-      }
+      } else {
+        let S002 = false;
+        const strID = line.match(/msgstr\[(\d+)\]/)?.[1];
 
-      let S002 = false;
-      const strID = line.match(/msgstr\[(\d+)\]/)?.[1];
-
-      if (!strID) S002 = true;
-      else {
-        const numberID = +strID;
-
-        // numberID not in range
-        if (numberID < 0) S002 = true;
-        // numberID !== 0 && id is first
-        else if (numberID && Number.isNaN(msgidN)) S002 = true;
+        if (!strID) S002 = true;
         else {
-          msgidN = Number.isNaN(msgidN) ? -1 : msgidN;
+          const numberID = +strID;
 
-          // numberID !== old msgid next
-          if (numberID !== ++msgidN) S002 = true;
+          // numberID not in range
+          if (numberID < 0) S002 = true;
+          // numberID !== 0 && id is first
+          else if (numberID && Number.isNaN(msgidN)) S002 = true;
+          else {
+            msgidN = Number.isNaN(msgidN) ? -1 : msgidN;
+
+            // numberID !== old msgid next
+            if (numberID !== ++msgidN) S002 = true;
+          }
         }
-      }
 
-      if (S002) {
-        errors.push(
-          summonDiagnostic('S002', new Range(i, 0, i, line.length), void 0, {
-            nextID: msgidN,
-          })
-        );
+        if (S002) {
+          errors.push(
+            summonDiagnostic('S002', new Range(i, 0, i, line.length), void 0, {
+              nextID: msgidN,
+            })
+          );
+        }
       }
     }
     // reset msgidPlural and else data
@@ -245,13 +247,39 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
       msgidPlural = msgid = msgctxt = void 0;
     }
 
+    if (/^(msg(id|str))/.test(line)) {
+      [...line.matchAll(new RegExp((nowFlags || langFormat.c).source, 'g'))]
+        .map((d) => ({
+          index: d.index || 0,
+          match: d[0],
+          groups: d.groups,
+        }))
+        .forEach(({ match, index, groups: { arg } = {} }) => {
+          if (!arg) {
+            tokenBuild?.push(i, index, match.length, 0);
+            return;
+          }
+
+          const name = match.slice(0, match.length - arg.length - 1);
+
+          tokenBuild?.push(i, index, name.length, 0);
+          tokenBuild?.push(i, index + name.length, arg.length, 1);
+          tokenBuild?.push(
+            i,
+            index + name.length + arg.length,
+            match.length - name.length - arg.length,
+            0
+          );
+        });
+    }
+
     // (#~)
-    PREFIX_DELETED;
+    // PREFIX_DELETED;
     // (#~ msgid)
-    PREFIX_DELETED_MSGID;
+    // PREFIX_DELETED_MSGID;
   }
 
-  diagnostic.set(document.uri, errors);
+  diagnostic?.set(document.uri, errors);
 };
 
 const errorsHandler: Record<
@@ -294,15 +322,15 @@ export function errorHandler(ctx: ExtensionContext) {
 
   workspace.findFiles(`**/*.{${exts}}`).then((paths) => {
     paths.forEach((path) => {
-      workspace.openTextDocument(path).then(f.bind(null, diagnostic));
+      workspace.openTextDocument(path).then(f.bind(null, diagnostic, void 0));
     });
   });
 
-  workspace.onDidChangeTextDocument((d) => f(diagnostic, d.document));
+  workspace.onDidChangeTextDocument((d) => f(diagnostic, void 0, d.document));
 
   ctx.subscriptions.push(
     languages.registerCodeActionsProvider('po', {
-      provideCodeActions(document, range, context, token) {
+      provideCodeActions(document) {
         const actions: CodeAction[] = [];
         for (const diagnostic of languages.getDiagnostics(document.uri)) {
           const errorData = diagnostic.code as ErrorDataType;
@@ -325,6 +353,19 @@ export function errorHandler(ctx: ExtensionContext) {
         }
         return actions;
       },
-    })
+    }),
+    languages.registerDocumentSemanticTokensProvider(
+      'po',
+      {
+        provideDocumentSemanticTokens(document) {
+          const tokensBuilder = new SemanticTokensBuilder(legend);
+
+          f(void 0, tokensBuilder, document);
+
+          return tokensBuilder.build();
+        },
+      },
+      legend
+    )
   );
 }
