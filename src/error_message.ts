@@ -8,11 +8,11 @@ export const BASE_WIKI =
 export enum ErrorCodeMessage {
   // Syntax error
   S001 = 'Syntax error, expected msgstr[N] instead of msgstr "" due to previous occurrence of `msgid_plural`',
-  S002 = '複數格式含有錯誤的索引',
-  S003 = '未包含 msgid_plural 但卻使用 msgstr[N]',
+  S002 = 'Plural format has wrong index',
+  S003 = 'Does not include msgid_plural but uses msgstr[N]',
 
-  F001 = '重複定義 headers',
-  F002 = '相同的 header name',
+  F001 = 'duplicate definition headers',
+  F002 = 'same header name',
 }
 
 export type ErrorCodeMessageKeys = keyof typeof ErrorCodeMessage;

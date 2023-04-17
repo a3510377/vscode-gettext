@@ -13,11 +13,7 @@ import {
   languages,
   workspace,
 } from 'vscode';
-import {
-  ErrorCodeMessage,
-  ErrorCodeMessageKeys,
-  summonDiagnostic,
-} from './error_message';
+import { ErrorCodeMessageKeys, summonDiagnostic } from './error_message';
 
 export const PREFIX_EXTRACTED_COMMENTS = '#. ';
 export const PREFIX_REFERENCES = '#: ';
@@ -69,8 +65,7 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
 
   let msgidPlural: Optional<PosData[]>,
     msgid: Optional<PosData[]>,
-    msgctxt: Optional<PosData[]>,
-    hasMsgstrList: Optional;
+    msgctxt: Optional<PosData[]>;
   let msgidN = NaN;
   let headers: Optional<Record<string, string>>;
 
@@ -209,16 +204,36 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
     // translated-string-case-N (msgstr[)
     else if (line.startsWith(PREFIX_MSGSTR_PLURAL)) {
       if (!msgidPlural) {
-        errors.push(
-          summonDiagnostic(
-            'S003',
-            new Range(new Position(i, 0), new Position(i, line.length))
-          )
-        );
+        errors.push(summonDiagnostic('S003', new Range(i, 0, i, line.length)));
+        continue;
+      }
+
+      let S002 = false;
+      const strID = line.match(/msgstr\[(\d+)\]/)?.[1];
+
+      if (!strID) S002 = true;
+      else {
+        const numberID = +strID;
+
+        // numberID not in range
+        if (numberID < 0) S002 = true;
+        // numberID !== 0 && id is first
+        else if (numberID && Number.isNaN(msgidN)) S002 = true;
+        else {
+          msgidN = Number.isNaN(msgidN) ? -1 : msgidN;
+
+          // numberID !== old msgid next
+          if (numberID !== ++msgidN) S002 = true;
+        }
+      }
+
+      if (S002) {
+        errors.push(summonDiagnostic('S002', new Range(i, 0, i, line.length)));
       }
     }
     // reset msgidPlural and else data
     else if (!line.startsWith(PREFIX_MSGSTR_PLURAL)) {
+      msgidN = NaN;
       msgidPlural = msgid = msgctxt = void 0;
     }
 
