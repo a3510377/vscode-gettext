@@ -28,8 +28,4 @@ msgctxt "awa"
 msgid "test2 %d {10}awa"
 msgid_plural "test"
 msgstr[0] "test"
-
-
-msgid ""
-msgstr ""
-"awa: awa"
+msgstr[2] "test"

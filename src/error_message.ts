@@ -8,24 +8,25 @@ export const BASE_WIKI =
 export enum ErrorCodeMessage {
   // Syntax error
   S001 = 'Syntax error, expected msgstr[N] instead of msgstr "" due to previous occurrence of `msgid_plural`',
-
-  /** msgstr[N] 之 N 與上組不連貫 */
   S002 = '複數格式含有錯誤的索引',
+  S003 = '未包含 msgid_plural 但卻使用 msgstr[N]',
 
   F001 = '重複定義 headers',
   F002 = '相同的 header name',
 }
 
-export const summonErrorLink = (ID: keyof typeof ErrorCodeMessage) => {
+export type ErrorCodeMessageKeys = keyof typeof ErrorCodeMessage;
+
+export const summonErrorLink = (ID: ErrorCodeMessageKeys) => {
   return {
     value: ID,
     target: Uri.parse(`${BASE_WIKI}#${ID}`),
-    message: ErrorCodeMessage[ID as keyof typeof ErrorCodeMessage],
+    message: ErrorCodeMessage[ID as ErrorCodeMessageKeys],
   };
 };
 
 export const summonDiagnostic = (
-  ID: keyof typeof ErrorCodeMessage,
+  ID: ErrorCodeMessageKeys,
   range: Range,
   severity?: DiagnosticSeverity
 ): Diagnostic => {

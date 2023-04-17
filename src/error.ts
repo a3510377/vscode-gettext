@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import {
   CodeAction,
   CodeActionKind,
@@ -12,7 +13,11 @@ import {
   languages,
   workspace,
 } from 'vscode';
-import { summonDiagnostic } from './error_message';
+import {
+  ErrorCodeMessage,
+  ErrorCodeMessageKeys,
+  summonDiagnostic,
+} from './error_message';
 
 export const PREFIX_EXTRACTED_COMMENTS = '#. ';
 export const PREFIX_REFERENCES = '#: ';
@@ -54,7 +59,6 @@ const extract = (string: string) => {
 type Optional<T = string> = T | undefined;
 export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
   const errors: Diagnostic[] = [];
-  let dummy = '';
 
   type PosData = {
     value: string;
@@ -65,7 +69,8 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
 
   let msgidPlural: Optional<PosData[]>,
     msgid: Optional<PosData[]>,
-    msgctxt: Optional<PosData[]>;
+    msgctxt: Optional<PosData[]>,
+    hasMsgstrList: Optional;
   let msgidN = NaN;
   let headers: Optional<Record<string, string>>;
 
@@ -133,31 +138,24 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
       ];
     };
 
-    const startWith = (start: string, base: string = line): boolean => {
-      if (!base.startsWith(start)) return false;
-
-      dummy = base.slice(start.length).trimEnd();
-      return true;
-    };
-
     // extracted-comments (#. )
-    if (startWith(PREFIX_EXTRACTED_COMMENTS)) {
+    if (line.startsWith(PREFIX_EXTRACTED_COMMENTS)) {
     }
     // reference (#: )
-    else if (startWith(PREFIX_REFERENCES)) {
+    else if (line.startsWith(PREFIX_REFERENCES)) {
       // console.log(dummy);
     }
     // flag (#, )
-    else if (startWith(PREFIX_FLAGS)) {
+    else if (line.startsWith(PREFIX_FLAGS)) {
     }
     // context (msgctxt ")
-    else if (startWith(PREFIX_MSGCTXT)) msgctxt = nowAndDeep();
+    else if (line.startsWith(PREFIX_MSGCTXT)) msgctxt = nowAndDeep();
     // untranslated-string (msgid ")
-    else if (startWith(PREFIX_MSGID)) msgid = nowAndDeep();
+    else if (line.startsWith(PREFIX_MSGID)) msgid = nowAndDeep();
     // untranslated-string-plural (msgid_plural ")
-    else if (startWith(PREFIX_MSGID_PLURAL)) msgidPlural = nowAndDeep();
+    else if (line.startsWith(PREFIX_MSGID_PLURAL)) msgidPlural = nowAndDeep();
     // translated-string (msgstr ")
-    else if (startWith(PREFIX_MSGSTR)) {
+    else if (line.startsWith(PREFIX_MSGSTR)) {
       if (msgidPlural) {
         // msgid_plural "test"
         // msgstr "test"
@@ -169,7 +167,7 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
         );
       }
 
-      if (isEmpty(msgid) || isEmpty(msgidPlural) || isEmpty(msgctxt)) {
+      if (isEmpty(msgid) && isEmpty(msgidPlural) && isEmpty(msgctxt)) {
         if (headers) {
           nowAndDeep();
           console.log(msgid);
@@ -191,7 +189,6 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
             if (!value) return;
 
             let [key, ...tmp] = value.split(':');
-            let data = tmp.join(':').trim();
 
             headers ||= {};
             if (key in headers) {
@@ -202,7 +199,7 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
                   DiagnosticSeverity.Warning
                 )
               );
-            } else headers[key] = data;
+            } else headers[key] = tmp.join(':').trim();
           });
         }
       }
@@ -210,7 +207,18 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
       msgidPlural = msgid = msgctxt = void 0;
     }
     // translated-string-case-N (msgstr[)
-    else if (PREFIX_MSGSTR_PLURAL) {
+    else if (line.startsWith(PREFIX_MSGSTR_PLURAL)) {
+      if (!msgidPlural) {
+        errors.push(
+          summonDiagnostic(
+            'S003',
+            new Range(new Position(i, 0), new Position(i, line.length))
+          )
+        );
+      }
+    }
+    // reset msgidPlural and else data
+    else if (!line.startsWith(PREFIX_MSGSTR_PLURAL)) {
       msgidPlural = msgid = msgctxt = void 0;
     }
 
@@ -221,6 +229,33 @@ export const f = (diagnostic: DiagnosticCollection, document: TextDocument) => {
   }
 
   diagnostic.set(document.uri, errors);
+};
+
+const errorsHandler: Record<
+  ErrorCodeMessageKeys,
+  | ((
+      document: TextDocument,
+      editor: WorkspaceEdit,
+      diagnostic: Diagnostic
+    ) => void)
+  | undefined
+> = {
+  // 重複定義 headers
+  F001: undefined,
+  // 相同的 header name
+  F002: undefined,
+  // Syntax error, expected msgstr[N] instead of msgstr "" due to previous occurrence of `msgid_plural`
+  S001(document, editor, diagnostic) {
+    // editor.replace(document, )
+    console.log(
+      document.getText(diagnostic.range).replace(/^(msgstr) (.*)/, '$1[0] $2')
+    );
+
+    editor.replace(document.uri, diagnostic.range, '');
+  },
+  // 複數格式含有錯誤的索引 (msgstr[N] 之 N 與上組不連貫)
+  S002: undefined,
+  S003(document, editor, diagnostic) {},
 };
 
 export function errorHandler(ctx: ExtensionContext) {
@@ -241,15 +276,21 @@ export function errorHandler(ctx: ExtensionContext) {
       provideCodeActions(document, range, context, token) {
         const actions: CodeAction[] = [];
         for (const diagnostic of languages.getDiagnostics(document.uri)) {
-          const quickFix = new CodeAction('test', CodeActionKind.QuickFix);
+          const errorCode = diagnostic.code as ErrorCodeMessageKeys;
+          if (errorCode in errorsHandler && errorsHandler[errorCode]) {
+            const quickFix = new CodeAction(
+              `修復 ${errorCode}`,
+              CodeActionKind.QuickFix
+            );
 
-          quickFix.isPreferred = true;
-          quickFix.edit = new WorkspaceEdit();
-          quickFix.edit.replace(document.uri, diagnostic.range, 'test');
+            quickFix.isPreferred = true;
+            quickFix.edit = new WorkspaceEdit();
+            quickFix.diagnostics = [diagnostic];
 
-          quickFix.diagnostics = [diagnostic];
+            errorsHandler[errorCode]?.(document, quickFix.edit, diagnostic);
 
-          actions.push(quickFix);
+            actions.push(quickFix);
+          }
         }
         return actions;
       },
