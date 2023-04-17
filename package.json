@@ -2,7 +2,7 @@
   "name": "gettext",
   "displayName": "vscode-gettext",
   "description": "Gettext PO files language support for Visual Studio Code",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "license": "GPL-3.0 license",
   "private": true,
   "publisher": "gettext",
@@ -88,7 +88,6 @@
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/lodash": "^4.14.192",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.77.0",
@@ -100,9 +99,5 @@
     "mocha": "^10.2.0",
     "typescript": "^4.9.5"
   },
-  "dependencies": {
-    "js-yaml": "^4.1.0",
-    "lodash": "^4.17.21",
-    "pofile": "^1.1.4"
-  }
+  "dependencies": {}
 }
