@@ -172,49 +172,51 @@ export class POParser {
 
                 headers ||= {};
                 if (key in headers) {
-                  // errors.push(
-                  //   summonDiagnostic(
-                  //     'F002',
-                  //     new Range(startLine + 2, 0, endLine + 1, endPos + 3),
-                  //     DiagnosticSeverity.Warning
-                  //   )
-                  // );
+                  errors.push(
+                    makeDiagnostic(
+                      'F002',
+                      new Range(startLine + 2, 0, endLine + 1, endPos + 3),
+                      DiagnosticSeverity.Warning
+                    )
+                  );
                 } else headers[key] = tmp.join(':').trim();
               }
             );
           }
         }
 
-        // msgidPlural = msgid = msgctxt = void 0;
+        items.push(new POItem(nowOption));
+        nowOption = {};
       }
       // translated-string-case-N (msgstr[)
       else if (line.startsWith(PREFIX_MSGSTR_PLURAL)) {
-        // if (!msgidPlural) {
-        //   errors.push(summonDiagnostic('S003', new Range(i, 0, i, line.length)));
-        // } else {
-        //   let S002 = false;
-        //   const strID = line.match(/msgstr\[(\d+)\]/)?.[1];
-        //   if (!strID) S002 = true;
-        //   else {
-        //     const numberID = +strID;
-        //     // numberID not in range
-        //     if (numberID < 0) S002 = true;
-        //     // numberID !== 0 && id is first
-        //     else if (numberID && Number.isNaN(msgidN)) S002 = true;
-        //     else {
-        //       msgidN = Number.isNaN(msgidN) ? -1 : msgidN;
-        //       // numberID !== old msgid next
-        //       if (numberID !== ++msgidN) S002 = true;
-        //     }
-        //   }
-        //   if (S002) {
-        //     errors.push(
-        //       summonDiagnostic('S002', new Range(i, 0, i, line.length), void 0, {
-        //         nextID: msgidN,
-        //       })
-        //     );
-        //   }
-        // }
+        if (!msgidPlural) {
+          errors.push(makeDiagnostic('S003', new Range(i, 0, i, line.length)));
+        } else {
+          let S002 = false;
+          const strID = line.match(/msgstr\[(\d+)\]/)?.[1];
+          if (!strID) S002 = true;
+          else {
+            const numberID = +strID;
+
+            // numberID not in range
+            if (numberID < 0) S002 = true;
+            // numberID !== 0 && id is first
+            else if (numberID && Number.isNaN(msgidN)) S002 = true;
+            else {
+              msgidN = Number.isNaN(msgidN) ? -1 : msgidN;
+              // numberID !== old msgid next
+              if (numberID !== ++msgidN) S002 = true;
+            }
+          }
+          if (S002) {
+            errors.push(
+              makeDiagnostic('S002', new Range(i, 0, i, line.length), void 0, {
+                nextID: msgidN,
+              })
+            );
+          }
+        }
       }
       // reset msgidPlural and else data
       else if (!line.startsWith(PREFIX_MSGSTR_PLURAL)) {
