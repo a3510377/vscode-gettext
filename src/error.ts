@@ -41,7 +41,7 @@ const legend = new SemanticTokensLegend([
 ]);
 
 type Optional<T = string> = T | undefined;
-export const f = (
+export const parse = (
   diagnostic: DiagnosticCollection | undefined,
   tokenBuild: SemanticTokensBuilder | undefined,
   document: TextDocument
@@ -71,7 +71,6 @@ export const f = (
 
   const totalCount = document.lineCount;
   for (let i = 0; i < document.lineCount; i++) {
-    const oldIndex = i;
     let line = document.lineAt(i).text;
 
     const getDeep = (split?: string) => {
@@ -322,11 +321,15 @@ export function errorHandler(ctx: ExtensionContext) {
 
   workspace.findFiles(`**/*.{${exts}}`).then((paths) => {
     paths.forEach((path) => {
-      workspace.openTextDocument(path).then(f.bind(null, diagnostic, void 0));
+      workspace
+        .openTextDocument(path)
+        .then(parse.bind(null, diagnostic, void 0));
     });
   });
 
-  workspace.onDidChangeTextDocument((d) => f(diagnostic, void 0, d.document));
+  workspace.onDidChangeTextDocument((d) =>
+    parse(diagnostic, void 0, d.document)
+  );
 
   ctx.subscriptions.push(
     languages.registerCodeActionsProvider('po', {
@@ -360,7 +363,7 @@ export function errorHandler(ctx: ExtensionContext) {
         provideDocumentSemanticTokens(document) {
           const tokensBuilder = new SemanticTokensBuilder(legend);
 
-          f(void 0, tokensBuilder, document);
+          parse(void 0, tokensBuilder, document);
 
           return tokensBuilder.build();
         },
