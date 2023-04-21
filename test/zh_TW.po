@@ -14,6 +14,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(1>1);\n"
 "Generated-By: dpy-template 1.0.0\n"
 "X-Generator: Poedit 3.2.2\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #: test.py:1
 #, c-format
@@ -29,6 +30,10 @@ msgid "test2 %d {10}awa"
 msgid_plural "test"
 msgstr[0] "test"
 msgstr[1] "awa"
+
+#: test.py:3
+msgid "test3"
+msgstr ""
 
 #: test.py:3
 msgid "test3"

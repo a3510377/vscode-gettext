@@ -5,8 +5,10 @@ import {
   Range,
   TextDocument,
 } from 'vscode';
+
 import { extract } from './utils';
 import { summonDiagnostic as makeDiagnostic } from './error_message';
+import { langFormat } from './format-data';
 
 type Optional<T = string> = T | undefined;
 
@@ -22,21 +24,31 @@ export const PREFIX_MSGSTR_PLURAL = 'msgstr[';
 export const PREFIX_DELETED = '#~';
 export const PREFIX_DELETED_MSGID = '#~ msgid';
 
+export const staticDocuments: Record<string, POParser> = {};
+
 export interface PosData<T = string> {
   value: T;
   startLine: number;
   endLine: number;
   endPos: number;
 }
+export interface ParserPostData<T = string> extends PosData<T> {
+  range: Range;
+}
 
 export class POParser {
   public items: POItem[] = [];
   public headers: Optional<Record<string, string>>;
+  public errors: Diagnostic[] = [];
+
   constructor(public document: TextDocument) {}
 
   public parse(): Diagnostic[] {
     const document = this.document;
     const errors: Diagnostic[] = [];
+    const items: POItem[] = [];
+
+    let headers: Optional<Record<string, string>>;
 
     let nowOption: POItemOption = {};
     let msgidN = NaN;
@@ -122,11 +134,7 @@ export class POParser {
       // flag (#, )
       else if (line.startsWith(PREFIX_FLAGS)) {
         nowOption.flags = {
-          value: line
-            .replace(/^#,/, '')
-            .trim()
-            .split(',')
-            .map((flag) => flag.replace(/-format$/, '')),
+          value: line.replace(/^#,/, '').trim().split(','),
           startLine: i,
           endLine: i,
           endPos: line.length,
@@ -137,7 +145,33 @@ export class POParser {
         nowOption.msgctxt = nowAndDeep();
       }
       // untranslated-string (msgid ")
-      else if (line.startsWith(PREFIX_MSGID)) nowOption.msgid = nowAndDeep();
+      else if (line.startsWith(PREFIX_MSGID)) {
+        nowOption.msgid = nowAndDeep();
+        const msgidData = postDataToRang(...(nowOption.msgid || []));
+        if (!msgidData) continue;
+        const { value, range } = msgidData;
+
+        const relatedInformation: DiagnosticRelatedInformation[] = items
+          .map(({ msgid, msgstr, options }) => {
+            if (msgid === value) {
+              return {
+                message: `${msgid}: ${msgstr}`,
+                location: {
+                  uri: document.uri,
+                  range: postDataToRang(...(options.msgid as PosData[]))?.range,
+                },
+              };
+            }
+          })
+          .filter(Boolean) as DiagnosticRelatedInformation[];
+
+        if (relatedInformation.length > 0) {
+          const error = makeDiagnostic('S004', range);
+          error.relatedInformation = relatedInformation;
+
+          errors.push(error);
+        }
+      }
       // untranslated-string-plural (msgid_plural ")
       else if (line.startsWith(PREFIX_MSGID_PLURAL)) {
         nowOption.msgidPlural = nowAndDeep();
@@ -155,9 +189,7 @@ export class POParser {
           isEmpty(nowOption.msgidPlural) &&
           isEmpty(nowOption.msgctxt)
         ) {
-          if (this.headers) {
-            nowAndDeep();
-
+          if (headers) {
             errors.push(
               makeDiagnostic(
                 'F001',
@@ -178,8 +210,8 @@ export class POParser {
 
                 let [key, ...tmp] = value.split(':');
 
-                this.headers ||= {};
-                if (key in this.headers) {
+                headers ||= {};
+                if (key in headers) {
                   errors.push(
                     makeDiagnostic(
                       'F002',
@@ -187,35 +219,13 @@ export class POParser {
                       DiagnosticSeverity.Warning
                     )
                   );
-                } else this.headers[key] = tmp.join(':').trim();
+                } else headers[key] = tmp.join(':').trim();
               }
             );
           }
-        } else if (msgid) {
-          const { range, value } = postDataToRang(...msgid);
-          const error = makeDiagnostic('S004', range);
-
-          error.relatedInformation = this.items
-            .map((item) => {
-              if (value === item.msgid) {
-                return {
-                  message: `${item.msgid}: ${item.msgstr}`,
-                  location: {
-                    uri: document.uri,
-                    range: postDataToRang(...(item.options.msgid as PosData[]))
-                      .range,
-                  },
-                };
-              }
-            })
-            .filter(Boolean) as DiagnosticRelatedInformation[];
-
-          errors.push(error);
-
-          nowOption.msgstr = nowAndDeep();
-          this.items.push(new POItem(nowOption));
         } else {
-          // TODO add error
+          nowOption.msgstr = nowAndDeep();
+          items.push(new POItem(nowOption));
         }
 
         nowOption = {};
@@ -248,20 +258,23 @@ export class POParser {
               })
             );
           } else {
-            // TODO add msgstr[N]
-            nowOption.msgstr = nowAndDeep();
+            nowOption.msgstrPlural ||= [];
+            nowOption.msgstrPlural[msgidN] = nowAndDeep();
           }
         }
       }
       // reset msgidPlural and else data
       else if (!line.startsWith(PREFIX_MSGSTR_PLURAL)) {
-        if (!Number.isNaN(msgidN)) this.items.push(new POItem(nowOption));
+        if (!Number.isNaN(msgidN)) items.push(new POItem(nowOption));
 
         msgidN = NaN;
         nowOption = {};
       }
     }
 
+    this.items = items;
+    this.errors = errors;
+    this.headers = headers;
     return errors;
   }
 }
@@ -272,6 +285,7 @@ export interface POItemOption {
   msgctxt?: PosData[];
   msgidPlural?: PosData[];
   msgstr?: PosData<string>[];
+  msgstrPlural?: PosData<string>[][];
 }
 
 export class POItem {
@@ -280,23 +294,45 @@ export class POItem {
   public msgstr: string;
   public msgctxt: string;
   public msgidPlural: string;
+  public msgstrPlural: string[];
+  public formatRegex: RegExp = langFormat.c;
 
   constructor(public options: POItemOption) {
-    const { msgid, msgctxt, msgidPlural, flags } = options;
+    const { msgid, msgctxt, msgidPlural, flags, msgstrPlural } = options;
 
     if (!msgid) throw new Error('msgid is required');
 
-    this.msgid = postDataToRang(...msgid).value;
+    for (let flag of flags?.value?.map((flag) =>
+      flag.replace(/-format$/, '')
+    ) || []) {
+      if (flag.startsWith('no-')) continue;
+
+      if (flag in langFormat) {
+        this.formatRegex = new RegExp(
+          langFormat[flag as keyof typeof langFormat].source,
+          'g'
+        );
+        break;
+      }
+    }
+
+    this.msgid = postDataToRang(...msgid)?.value || '';
     this.flags =
       flags?.value.filter((now, i, data) => !data.includes(now, ++i)) || [];
-    this.msgstr = postDataToRang(...msgid).value || '';
+    this.msgstr = postDataToRang(...msgid)?.value || '';
 
-    this.msgctxt = postDataToRang(...(msgctxt || [])).value || '';
-    this.msgidPlural = postDataToRang(...(msgidPlural || [])).value || '';
+    this.msgctxt = postDataToRang(...(msgctxt || []))?.value || '';
+    this.msgidPlural = postDataToRang(...(msgidPlural || []))?.value || '';
+    this.msgstrPlural =
+      msgstrPlural?.map((d) => postDataToRang(...d)?.value || '') || [];
   }
 }
 
-const postDataToRang = (...data: PosData[]) => {
+export const postDataToRang = (
+  ...data: PosData[]
+): ParserPostData | undefined => {
+  if (data.length === 0) return;
+
   const startLine = Math.min(...data.map((d) => d.startLine));
   const endLine = Math.max(...data.map((d) => d.endLine));
   const endPos = Math.max(
