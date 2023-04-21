@@ -10,6 +10,7 @@ export enum ErrorCodeMessage {
   S001 = 'Syntax error, expected msgstr[N] instead of msgstr "" due to previous occurrence of `msgid_plural`',
   S002 = 'Plural format has wrong index',
   S003 = 'Does not include msgid_plural but uses msgstr[N]',
+  S004 = 'Duplicate message definition',
 
   F001 = 'duplicate definition headers',
   F002 = 'same header name',

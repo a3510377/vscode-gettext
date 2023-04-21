@@ -312,6 +312,7 @@ const errorsHandler: Record<
     );
   },
   S003: undefined,
+  S004: undefined,
 };
 
 export function errorHandler(ctx: ExtensionContext) {
