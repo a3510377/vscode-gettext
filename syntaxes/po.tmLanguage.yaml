@@ -2,7 +2,7 @@ name: gettext
 scopeName: source.po
 patterns:
   # - begin: ^(?=(msgid(_plural)?|msgctxt)\s*\"[^"])|^\s*$
-  - begin: ^(?=(?:msgid(_plural)?|msgctxt)\s*"(?:[^"]|"\s+"))|^\s*$
+  - begin: ^\s*$|^(?=((msgid(_plural)?|msgctxt) (?="[^"]+"|(?:""\s)+(?:"[^"]+")+)))
     end: \Z
     patterns:
       - include: '#body'
