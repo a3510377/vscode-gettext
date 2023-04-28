@@ -113,36 +113,35 @@ export function errorHandler(ctx: ExtensionContext) {
 
           setStaticDocuments(document).items.forEach(
             ({ options: { msgid, msgstr, msgidPlural }, formatRegex }) => {
-              const range = postDataToRang(
-                ...(msgid || msgstr || msgidPlural || [])
-              )?.range;
+              for (const d of [msgid, msgstr, msgidPlural]) {
+                const range = d && postDataToRang(...d)?.range;
+                if (!range) continue;
 
-              if (!range) return;
+                const i = range.start.line;
+                [...document.getText(range).matchAll(formatRegex)]
+                  .map((d) => ({
+                    index: d.index || 0,
+                    match: d[0],
+                    groups: d.groups,
+                  }))
+                  .forEach(({ match, index, groups: { arg } = {} }) => {
+                    if (!arg) {
+                      tokensBuilder.push(i, index, match.length, 0);
+                      return;
+                    }
 
-              const i = range.start.line;
-              [...document.getText(range).matchAll(formatRegex)]
-                .map((d) => ({
-                  index: d.index || 0,
-                  match: d[0],
-                  groups: d.groups,
-                }))
-                .forEach(({ match, index, groups: { arg } = {} }) => {
-                  if (!arg) {
-                    tokensBuilder.push(i, index, match.length, 0);
-                    return;
-                  }
+                    const name = match.slice(0, match.length - arg.length - 1);
 
-                  const name = match.slice(0, match.length - arg.length - 1);
-
-                  tokensBuilder.push(i, index, name.length, 0);
-                  tokensBuilder.push(i, index + name.length, arg.length, 1);
-                  tokensBuilder.push(
-                    i,
-                    index + name.length + arg.length,
-                    match.length - name.length - arg.length,
-                    0
-                  );
-                });
+                    tokensBuilder.push(i, index, name.length, 0);
+                    tokensBuilder.push(i, index + name.length, arg.length, 1);
+                    tokensBuilder.push(
+                      i,
+                      index + name.length + arg.length,
+                      match.length - name.length - arg.length,
+                      0
+                    );
+                  });
+              }
             }
           );
 
