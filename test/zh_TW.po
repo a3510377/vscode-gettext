@@ -26,7 +26,7 @@ msgstr[1] ""
 #: test.py:2
 #, python-format
 msgctxt "awa"
-msgid "test2 %d {10}awa"
+msgid "test2 %d {awa.awa}awa"
 msgid_plural "test"
 msgstr[0] "test"
 msgstr[1] "awa"

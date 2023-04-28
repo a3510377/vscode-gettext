@@ -17,7 +17,7 @@ export const QTFormat = /(%L?(\d\d?|n))/g;
 // new style https://docs.python.org/3/library/string.html#format-string-syntax
 // https://peps.python.org/pep-3101/
 export const pythonBrace =
-  /{{|}}|({\w*(\.[[:alpha:]_]\w*|\[[^\]'"]+\])*(?<arg>(![rsa])?(:\w?[><=^]?[ +-]?#?\d*,?(\.\d+)?[bcdeEfFgGnosxX%]?))?})/g;
+  /{{|}}|({\w*(\.[a-zA-Z_]\w*|\[[^\]'"]+\])*(?<arg>(![rsa])?(:\w?[><=^]?[ +-]?#?\d*,?(\.\d+)?[bcdeEfFgGnosxX%]?))?})/g;
 
 export const langFormat = {
   python: orRegexp(
