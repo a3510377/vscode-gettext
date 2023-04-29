@@ -6,8 +6,8 @@ import {
   TextDocument,
 } from 'vscode';
 
-import { extract } from './utils';
-import { summonDiagnostic as makeDiagnostic } from './error_message';
+import { extract } from '../utils';
+import { summonDiagnostic as makeDiagnostic } from '../editor/problems_message';
 import { langFormat } from './format-data';
 
 type Optional<T = string> = T | undefined;
@@ -34,6 +34,10 @@ export interface PosData<T = string> {
 }
 export interface ParserPostData<T = string> extends PosData<T> {
   range: Range;
+}
+
+export class POData {
+  static init() {}
 }
 
 export class POParser {

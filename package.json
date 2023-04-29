@@ -6,11 +6,19 @@
   "license": "GPL-3.0 license",
   "private": true,
   "publisher": "gettext",
-  "icon": "./assets/vscode-gettext-logo.png",
+  "icon": "./res/vscode-gettext-logo.png",
   "author": {
     "name": "monkey",
     "url": "https://a3510377.github.io"
   },
+  "keywords": [
+    "i18n",
+    "python",
+    "translate",
+    "gettext",
+    "po",
+    "pot"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/a3510377/vscode-gettext"
@@ -30,7 +38,7 @@
   "activationEvents": [
     "onLanguage:pot"
   ],
-  "main": "./out/main.js",
+  "main": "./out/extension.js",
   "contributes": {
     "languages": [
       {

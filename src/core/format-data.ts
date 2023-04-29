@@ -4,7 +4,7 @@ reference: https://github.com/microsoft/vscode/tree/main/extensions
            https://github.com/vslavik/poedit/blob/master/src/syntaxhighlighter.h
 */
 
-import { orRegexp } from './utils';
+import { orRegexp } from '../utils';
 
 // http://en.cppreference.com/w/cpp/io/c/fprintf,
 // http://pubs.opengroup.org/onlinepubs/9699919799/functions/fprintf.html

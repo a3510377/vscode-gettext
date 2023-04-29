@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import { Diagnostic, DiagnosticSeverity, Range, Uri } from 'vscode';
+import {
+  Diagnostic,
+  DiagnosticSeverity,
+  Range,
+  TextDocument,
+  Uri,
+  WorkspaceEdit,
+} from 'vscode';
 
 export const BASE_WIKI =
   'https://github.com/a3510377/vscode-gettext/wiki/error-code';
@@ -22,7 +29,7 @@ export interface ErrorDataType<
 > {
   value: T;
   target: Uri;
-  message: typeof ErrorCodeMessage[T];
+  message: (typeof ErrorCodeMessage)[T];
 
   [k: string]: unknown;
 }
@@ -52,4 +59,38 @@ export const summonDiagnostic = (
   d.code = error;
 
   return d;
+};
+
+export const errorsHandler: Record<
+  ErrorCodeMessageKeys,
+  | ((
+      document: TextDocument,
+      editor: WorkspaceEdit,
+      diagnostic: Diagnostic
+    ) => void)
+  | undefined
+> = {
+  F001: undefined,
+  F002: undefined,
+
+  S001(document, editor, diagnostic) {
+    editor.replace(
+      document.uri,
+      diagnostic.range,
+      document.getText(diagnostic.range).replace(/^(msgstr) (.*)/, `$1[0] $2`)
+    );
+  },
+  S002(document, editor, diagnostic) {
+    let errorData = diagnostic.code as ErrorDataType;
+
+    editor.replace(
+      document.uri,
+      diagnostic.range,
+      document
+        .getText(diagnostic.range)
+        .replace(/^(msgstr)\[\d+\] (.*)/, `$1[${errorData?.nextID || 0}] $2`)
+    );
+  },
+  S003: undefined,
+  S004: undefined,
 };

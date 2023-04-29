@@ -1,3 +1,5 @@
+import { Disposable, ExtensionContext } from 'vscode';
+
 export const orRegexp = (flags?: string, ...regexps: RegExp[]) => {
   return new RegExp(regexps.map((r) => `(?:${r.source})`, flags).join('|'));
 };
@@ -26,3 +28,17 @@ export const extract = (string: string) => {
       }
     );
 };
+
+export const flatten = <T>(...array: (ReadonlyArray<T> | T)[]): T[] => {
+  const result: T[] = [];
+  for (const value of array) {
+    if (Array.isArray(value)) flatten(...value);
+    else result.push(value as T);
+  }
+
+  return result;
+};
+
+export type ExtensionModule = (
+  ctx: ExtensionContext
+) => Disposable | Disposable[];

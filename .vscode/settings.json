@@ -10,5 +10,6 @@
   "typescript.tsc.autoDetect": "off",
   "yaml.schemas": {
     "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json": "syntaxes/*.yaml"
-  }
+  },
+  "commentTranslate.multiLineMerge": false
 }
