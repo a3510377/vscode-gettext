@@ -4,11 +4,14 @@ import {
   DiagnosticSeverity,
   Range,
   TextDocument,
+  languages,
+  workspace,
+  EventEmitter,
 } from 'vscode';
 
-import { extract } from '../utils';
 import { summonDiagnostic as makeDiagnostic } from '../editor/problems_message';
 import { langFormat } from './format-data';
+import path from 'path';
 
 type Optional<T = string> = T | undefined;
 
@@ -26,6 +29,8 @@ export const PREFIX_DELETED_MSGID = '#~ msgid';
 
 export const staticDocuments: Record<string, POParser> = {};
 
+const exts = ['.po', '.pot'].map((ext) => ext.replace(/^\./, '')).join(',');
+
 export interface PosData<T = string> {
   value: T;
   startLine: number;
@@ -37,17 +42,93 @@ export interface ParserPostData<T = string> extends PosData<T> {
 }
 
 export class POData {
-  static init() {}
+  static changeEvent = new EventEmitter<Record<string, POParser>>();
+  static diagnostic = languages.createDiagnosticCollection('po');
+  protected static _documents: Record<string, POParser> = {};
+
+  static getStaticDocuments(document: TextDocument) {
+    const parser = this._documents[document.uri.path] || new POParser(document);
+
+    this._documents[document.uri.path] ||= parser;
+    this.diagnostic.set(document.uri, parser.parse());
+
+    return parser;
+  }
+
+  static get documents() {
+    return this._documents;
+  }
+
+  static init() {
+    workspace.findFiles(`**/*.{${exts}}`).then((paths) => {
+      paths.forEach((path) => {
+        if (!(path.path in this.documents)) {
+          workspace.openTextDocument(path).then((document) => {
+            this.getStaticDocuments(document);
+          });
+        } else this.documents[path.path].parse();
+      });
+    });
+
+    workspace.onDidChangeTextDocument((d) => {
+      this.getStaticDocuments(d.document);
+    });
+  }
+
+  static clear() {
+    this._documents = {};
+    this.diagnostic.clear();
+    this.refresh();
+  }
+
+  static refresh() {
+    this.changeEvent.fire(this.documents);
+  }
 }
 
 export class POParser {
   public items: POItem[] = [];
   public headers: Optional<Record<string, string>>;
   public errors: Diagnostic[] = [];
+  protected _locale?: string;
 
   constructor(public document: TextDocument) {}
 
-  public parse(): Diagnostic[] {
+  get total() {
+    return this.items.length;
+  }
+  get translated() {
+    return this.items.filter((item) => {
+      const check = (d: string) => d && d !== '';
+      return (
+        check(item.msgstr) ||
+        item.msgstrPlural.filter(check).length === item.msgstrPlural.length
+      );
+    });
+  }
+  get missing() {
+    return this.items.filter((item) => !item.msgstr);
+  }
+  get dict() {
+    const map: Record<string, string | string[]> = {};
+
+    this.items.forEach((item) => {
+      if (!item.msgid) return;
+      map[item.msgid] = item.msgstr || item.msgstrPlural;
+    });
+
+    return map;
+  }
+  get locale() {
+    if (this._locale) return this._locale;
+
+    return (
+      this.headers?.['Language'] ||
+      path.basename(this.document.fileName).replace(/\.[^\.]*$/, '')
+    );
+  }
+
+  parse(): Diagnostic[] {
     const document = this.document;
     const errors: Diagnostic[] = [];
     const items: POItem[] = [];
@@ -279,6 +360,8 @@ export class POParser {
     this.items = items;
     this.errors = errors;
     this.headers = headers;
+
+    POData.refresh();
     return errors;
   }
 }
@@ -302,7 +385,8 @@ export class POItem {
   public formatRegex: RegExp = langFormat.c;
 
   constructor(public options: POItemOption) {
-    const { msgid, msgctxt, msgidPlural, flags, msgstrPlural } = options;
+    const { msgid, msgstr, msgctxt, msgidPlural, flags, msgstrPlural } =
+      options;
 
     if (!msgid) throw new Error('msgid is required');
 
@@ -323,7 +407,7 @@ export class POItem {
     this.msgid = postDataToRang(...msgid)?.value || '';
     this.flags =
       flags?.value.filter((now, i, data) => !data.includes(now, ++i)) || [];
-    this.msgstr = postDataToRang(...msgid)?.value || '';
+    this.msgstr = postDataToRang(...(msgstr || []))?.value || '';
 
     this.msgctxt = postDataToRang(...(msgctxt || []))?.value || '';
     this.msgidPlural = postDataToRang(...(msgidPlural || []))?.value || '';
@@ -350,4 +434,29 @@ export const postDataToRang = (
     endPos,
     range: new Range(startLine, 0, endLine, endPos),
   };
+};
+
+export const extract = (string: string) => {
+  return string
+    .trim()
+    .replace(/^[^"]*"|"$/g, '')
+    .replace(
+      /\\([abtnvfr'"\\?]|([0-7]{3})|x([0-9a-fA-F]{2}))/g,
+      (_, esc: string, oct: string, hex: string) => {
+        if (oct) return String.fromCharCode(parseInt(oct, 8));
+        if (hex) return String.fromCharCode(parseInt(hex, 16));
+
+        return (
+          {
+            a: '\x07',
+            b: '\b',
+            t: '\t',
+            n: '\n',
+            v: '\v',
+            f: '\f',
+            r: '\r',
+          }[esc] || esc
+        );
+      }
+    );
 };

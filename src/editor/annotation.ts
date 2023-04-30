@@ -32,5 +32,7 @@ export class Annotation {
     const document = editor?.document;
 
     if (!(editor && document)) return;
+
+    // TODO feat this
   }
 }

@@ -33,4 +33,4 @@ msgstr[1] "awa"
 
 #: test.py:3
 msgid "test3"
-msgstr ""
+msgstr "test"

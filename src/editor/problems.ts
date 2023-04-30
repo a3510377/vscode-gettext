@@ -12,14 +12,12 @@ import {
   TextDocument,
   WorkspaceEdit,
   languages,
-  workspace,
 } from 'vscode';
 
 import { ErrorDataType, errorsHandler } from './problems_message';
-import { POParser, postDataToRang, staticDocuments } from '../core/parse';
+import { POData, postDataToRang } from '../core/parse';
 import { ExtensionModule } from '../utils';
 
-const exts = ['.po', '.pot'].map((ext) => ext.replace(/^\./, '')).join(',');
 const legend = new SemanticTokensLegend([
   'po-auto-format-placeholder',
   'po-auto-storage-format',
@@ -28,39 +26,12 @@ const legend = new SemanticTokensLegend([
 export class ProblemProvider
   implements DocumentSemanticTokensProvider, CodeActionProvider
 {
-  static diagnostic = languages.createDiagnosticCollection('po');
-
-  static setStaticDocuments(document: TextDocument) {
-    const parser = staticDocuments[document.uri.path] || new POParser(document);
-
-    staticDocuments[document.uri.path] ||= parser;
-    ProblemProvider.diagnostic.set(document.uri, parser.parse());
-
-    return parser;
-  }
-
-  init() {
-    workspace.findFiles(`**/*.{${exts}}`).then((paths) => {
-      paths.forEach((path) => {
-        if (!(path.path in staticDocuments)) {
-          workspace
-            .openTextDocument(path)
-            .then((document) => ProblemProvider.setStaticDocuments(document));
-        } else staticDocuments[path.path].parse();
-      });
-    });
-
-    workspace.onDidChangeTextDocument((d) => {
-      ProblemProvider.setStaticDocuments(d.document);
-    });
-  }
-
   provideDocumentSemanticTokens(
     document: TextDocument
   ): ProviderResult<SemanticTokens> {
     const tokensBuilder = new SemanticTokensBuilder(legend);
 
-    ProblemProvider.setStaticDocuments(document).items.forEach(
+    POData.getStaticDocuments(document).items.forEach(
       ({ options: { msgid, msgstr, msgidPlural }, formatRegex }) => {
         for (const d of [msgid, msgstr, msgidPlural]) {
           const range = d && postDataToRang(...d)?.range;
@@ -128,8 +99,6 @@ export class ProblemProvider
 
 export default (() => {
   const problem = new ProblemProvider();
-
-  problem.init();
 
   return [
     languages.registerCodeActionsProvider('po', problem),

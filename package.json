@@ -84,7 +84,24 @@
           ]
         }
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gettext",
+          "title": "gettext",
+          "icon": "./res/logo-view-container.svg"
+        }
+      ]
+    },
+    "views": {
+      "gettext": [
+        {
+          "id": "gettext-locales-progress",
+          "name": "Translation progress"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
