@@ -9,7 +9,7 @@ try {
 
     fs.writeFileSync(
       file.replace(/.yaml$/, '.json'),
-      JSON.stringify(yaml.load(fs.readFileSync(file, 'utf8')))
+      JSON.stringify(yaml.load(fs.readFileSync(file, 'utf8')), null, 2)
     );
   });
 } catch (e) {
