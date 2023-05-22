@@ -108,7 +108,7 @@
     "compile": "tsc -p ./",
     "watch": "concurrently yarn:watch:*",
     "watch:tsc": "tsc -watch -p ./",
-    "watch:syntaxes": "nodemon -e syntaxes -w ./syntaxes -x \"node scripts/compile_syntaxes.js\"",
+    "watch:syntaxes": "nodemon -e yaml -w ./syntaxes -x \"node scripts/compile_syntaxes.js\"",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"

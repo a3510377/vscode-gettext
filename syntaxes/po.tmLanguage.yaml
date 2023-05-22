@@ -22,6 +22,15 @@ patterns:
 repository:
   body:
     patterns:
+      - name: meta.scope.msgstr.po
+        match: ^(msgstr(?:\[(\d+)\])?) ("[^"]*")
+        captures:
+          '1': { name: keyword.control.msgstr.po }
+          '2': { name: constant.numeric.po }
+          '3':
+            patterns:
+              - include: '#strings'
+
       - name: meta.scope.msgid.po
         match: ^(msgid(?:_plural)?) ("[^"]+"|""(?:\n"[^"]+")+)
         captures:
@@ -35,15 +44,6 @@ repository:
         captures:
           '1': { name: keyword.control.msgctxt.po }
           '2':
-            patterns:
-              - include: '#strings'
-
-      - name: meta.scope.msgstr.po
-        match: ^(msgstr(?:\[(\d+)\])?) ("[^"]*")
-        captures:
-          '1': { name: keyword.control.msgstr.po }
-          '2': { name: constant.numeric.po }
-          '3':
             patterns:
               - include: '#strings'
 
