@@ -106,7 +106,8 @@
   "scripts": {
     "vscode:prepublish": "yarn run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "watch": "concurrently yarn:watch:*",
+    "watch:tsc": "tsc -watch -p ./",
     "watch:syntaxes": "nodemon -e syntaxes -w ./syntaxes -x \"node scripts/compile_syntaxes.js\"",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
@@ -120,6 +121,7 @@
     "@typescript-eslint/eslint-plugin": "^5.56.0",
     "@typescript-eslint/parser": "^5.56.0",
     "@vscode/test-electron": "^2.3.0",
+    "concurrently": "^8.0.1",
     "eslint": "^8.36.0",
     "glob": "^8.1.0",
     "js-yaml": "^4.1.0",
