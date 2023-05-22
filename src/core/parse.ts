@@ -158,7 +158,7 @@ export class POParser {
         for (; i < totalCount - 1; i++) {
           let line = document.lineAt(i + 1).text;
 
-          if (/^\t?"|"^/.test(line)) {
+          if (/^\t?"/.test(line)) {
             if (split === void 0) {
               data.push({
                 value: extract(line),

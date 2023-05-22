@@ -3,7 +3,37 @@
   "scopeName": "source.po",
   "patterns": [
     {
-      "begin": "^\\s*$|^(?=((msgid(_plural)?|msgctxt) (?=\"[^\"]+\"|(?:\"\"\\s)+(?:\"[^\"]+\")+)))",
+      "name": "meta.header.po",
+      "begin": "(msgid (\"\"\n?)+)",
+      "end": "^(?!msgstr|\")",
+      "beginCaptures": {
+        "1": {
+          "name": "comment.line.number-sign.po"
+        }
+      },
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.po",
+          "match": "msgstr \"\""
+        },
+        {
+          "match": "\"(?:([^\\s:]+)(:)\\s+)?([^\"]*)\"",
+          "captures": {
+            "1": {
+              "name": "constant.language.po"
+            },
+            "2": {
+              "name": "punctuation.separator.key-value.po"
+            },
+            "3": {
+              "name": "string.other.po"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "begin": "^\\s*$|^(?=msgid(_plural)?|msgctxt)",
       "end": "\\Z",
       "patterns": [
         {
@@ -17,21 +47,6 @@
     {
       "name": "comment.line.number-sign.po",
       "match": "^msg(id|str)\\s+\"\"\\s*$"
-    },
-    {
-      "name": "meta.header.po",
-      "match": "^\\t?\"(?:([^\\s:]+)(:)\\s+)?([^\"]*)\"",
-      "captures": {
-        "1": {
-          "name": "constant.language.po"
-        },
-        "2": {
-          "name": "punctuation.separaor.key-value.po"
-        },
-        "3": {
-          "name": "string.other.po"
-        }
-      }
     }
   ],
   "repository": {
@@ -39,7 +54,7 @@
       "patterns": [
         {
           "name": "meta.scope.msgid.po",
-          "begin": "(msgid(_plural)?)\\s+",
+          "begin": "^(msgid(_plural)?) ",
           "end": "^(?!\")",
           "beginCaptures": {
             "1": {
@@ -54,7 +69,7 @@
         },
         {
           "name": "meta.scope.msgctxt.po",
-          "begin": "(msgctxt)\\s+",
+          "begin": "^(msgctxt) ",
           "end": "^(?!\")",
           "beginCaptures": {
             "1": {
@@ -69,20 +84,14 @@
         },
         {
           "name": "meta.scope.msgstr.po",
-          "begin": "^(msgstr)(?:(\\[)(\\d+)(\\]))?\\s+",
+          "begin": "^(msgstr(?:\\[(\\d+)\\])?) ",
           "end": "^(?!\")",
           "beginCaptures": {
             "1": {
               "name": "keyword.control.msgstr.po"
             },
             "2": {
-              "name": "keyword.control.msgstr.po"
-            },
-            "3": {
               "name": "constant.numeric.po"
-            },
-            "4": {
-              "name": "keyword.control.msgstr.po"
             }
           },
           "patterns": [
