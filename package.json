@@ -107,6 +107,7 @@
     "vscode:prepublish": "yarn run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "watch:syntaxes": "nodemon -e syntaxes -w ./syntaxes -x \"node scripts/compile_syntaxes.js\"",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
@@ -121,7 +122,9 @@
     "@vscode/test-electron": "^2.3.0",
     "eslint": "^8.36.0",
     "glob": "^8.1.0",
+    "js-yaml": "^4.1.0",
     "mocha": "^10.2.0",
+    "nodemon": "^2.0.22",
     "typescript": "^4.9.5"
   },
   "dependencies": {}

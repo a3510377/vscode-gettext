@@ -26,31 +26,13 @@
     "body": {
       "patterns": [
         {
-          "name": "meta.scope.msgid.po",
-          "match": "(msgid(_plural)?) (\"[^\"]+\"|\"\"(\\n\"[^\"]+\")+)",
+          "name": "meta.scope.msgstr.po",
+          "match": "^(msgstr(?:\\[(\\d+)\\])?) (\"[^\"]*\")",
           "captures": {
-            "1": { "name": "keyword.control.msgid.po" },
+            "1": { "name": "keyword.control.msgstr.po" },
+            "2": { "name": "constant.numeric.po" },
             "3": { "patterns": [{ "include": "#strings" }] }
           }
-        },
-        {
-          "name": "meta.scope.msgctxt.po",
-          "begin": "(msgctxt)\\s+",
-          "end": "(?<!\\\\)\"",
-          "beginCaptures": { "1": { "name": "keyword.control.msgctxt.po" } },
-          "patterns": [{ "include": "#strings" }]
-        },
-        {
-          "name": "meta.scope.msgstr.po",
-          "begin": "^(msgstr)(?:(\\[)(\\d+)(\\]))?\\s+",
-          "end": "(?<!\\\\)\"",
-          "beginCaptures": {
-            "1": { "name": "keyword.control.msgstr.po" },
-            "2": { "name": "keyword.control.msgstr.po" },
-            "3": { "name": "constant.numeric.po" },
-            "4": { "name": "keyword.control.msgstr.po" }
-          },
-          "patterns": [{ "include": "#strings" }]
         }
       ]
     },
@@ -86,7 +68,7 @@
         },
         {
           "name": "comment.line.number-sign.reference.po",
-          "begin": ":\\s*",
+          "begin": "\\s*",
           "end": "$",
           "patterns": [
             { "match": "\\S+:[\\d;]*", "name": "storage.type.class.po" }

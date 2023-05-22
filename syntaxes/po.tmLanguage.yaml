@@ -23,31 +23,29 @@ repository:
   body:
     patterns:
       - name: meta.scope.msgid.po
-        match: (msgid(_plural)?) ("[^"]+"|""(\n"[^"]+")+)
+        match: ^(msgid(?:_plural)?) ("[^"]+"|""(?:\n"[^"]+")+)
         captures:
           '1': { name: 'keyword.control.msgid.po' }
-          '3':
+          '2':
             patterns:
               - include: '#strings'
 
       - name: meta.scope.msgctxt.po
-        begin: (msgctxt)\s+
-        end: (?<!\\)"
-        beginCaptures:
+        match: ^(msgctxt) ("[^"]+"|""(?:\n"[^"]+")+)
+        captures:
           '1': { name: keyword.control.msgctxt.po }
-        patterns:
-          - include: '#strings'
+          '2':
+            patterns:
+              - include: '#strings'
 
       - name: meta.scope.msgstr.po
-        begin: ^(msgstr)(?:(\[)(\d+)(\]))?\s+
-        end: (?<!\\)"
-        beginCaptures:
+        match: ^(msgstr(?:\[(\d+)\])?) ("[^"]*")
+        captures:
           '1': { name: keyword.control.msgstr.po }
-          '2': { name: keyword.control.msgstr.po }
-          '3': { name: constant.numeric.po }
-          '4': { name: keyword.control.msgstr.po }
-        patterns:
-          - include: '#strings'
+          '2': { name: constant.numeric.po }
+          '3':
+            patterns:
+              - include: '#strings'
 
   strings:
     name: string.quoted.double.po
@@ -91,7 +89,7 @@ repository:
       # #:
       # reference...
       - name: comment.line.number-sign.reference.po
-        begin: ":\\s*"
+        begin: :\s*
         end: $
         patterns:
           - match: \S+:[\d;]*
