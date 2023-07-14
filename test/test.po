@@ -15,7 +15,7 @@ msgstr ""
 
 #: bot\core\commands.py:119 bot\core\commands.py:119 bot\core\help.py:82
 #: bot\core\help.py:82
-msgid "指令"
+msgid "指令 \n \t \a \u0015 \x11 \U11111111 \""
 msgstr ""
 
 #: bot\core\commands.py:120 bot\core\commands.py:120

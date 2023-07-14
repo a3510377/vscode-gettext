@@ -3,36 +3,6 @@
   "scopeName": "source.po",
   "patterns": [
     {
-      "name": "meta.header.po",
-      "begin": "(msgid (\"\"\n?)+)",
-      "end": "^(?!msgstr|\")",
-      "beginCaptures": {
-        "1": {
-          "name": "comment.line.number-sign.po"
-        }
-      },
-      "patterns": [
-        {
-          "name": "comment.line.number-sign.po",
-          "match": "msgstr \"\""
-        },
-        {
-          "match": "\"(?:([^\\s:]+)(:)\\s+)?([^\"]*)\"",
-          "captures": {
-            "1": {
-              "name": "constant.language.po"
-            },
-            "2": {
-              "name": "punctuation.separator.key-value.po"
-            },
-            "3": {
-              "name": "string.other.po"
-            }
-          }
-        }
-      ]
-    },
-    {
       "begin": "^\\s*$|^(?=msgid(_plural)?|msgctxt)",
       "end": "\\Z",
       "patterns": [
@@ -51,6 +21,7 @@
   ],
   "repository": {
     "body": {
+      "name": "meta.item.po",
       "patterns": [
         {
           "name": "meta.scope.msgid.po",
@@ -113,7 +84,7 @@
         },
         {
           "name": "constant.character.escape.line-continuation.po",
-          "match": "\\\\\\n"
+          "match": "\\\\n"
         }
       ]
     },

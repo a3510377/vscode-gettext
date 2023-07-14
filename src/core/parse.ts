@@ -15,17 +15,17 @@ import path from 'path';
 
 type Optional<T = string> = T | undefined;
 
-export const PREFIX_EXTRACTED_COMMENTS = '#. ';
-export const PREFIX_REFERENCES = '#: ';
-export const PREFIX_FLAGS = '#, ';
-// export const PREFIX_PREV_MSGID = '#| msgid';
-export const PREFIX_MSGCTXT = 'msgctxt "';
-export const PREFIX_MSGID = 'msgid "';
-export const PREFIX_MSGID_PLURAL = 'msgid_plural "';
-export const PREFIX_MSGSTR = 'msgstr "';
-export const PREFIX_MSGSTR_PLURAL = 'msgstr[';
-export const PREFIX_DELETED = '#~';
-export const PREFIX_DELETED_MSGID = '#~ msgid';
+export const PREFIX_EXTRACTED_COMMENTS = /^#\. +/;
+export const PREFIX_REFERENCES = /^#: +/;
+export const PREFIX_FLAGS = /^#, +/;
+// export const PREFIX_PREV_MSGID = /^#| msgid/;
+export const PREFIX_MSGCTXT = /^msgctxt +"/;
+export const PREFIX_MSGID = /^msgid +"/;
+export const PREFIX_MSGID_PLURAL = /^msgid_plural +"/;
+export const PREFIX_MSGSTR = /^msgstr +"/;
+export const PREFIX_MSGSTR_PLURAL = /^msgstr\[/;
+export const PREFIX_DELETED = /^#~/;
+export const PREFIX_DELETED_MSGID = /^#~ +msgid/;
 
 export const staticDocuments: Record<string, POParser> = {};
 
@@ -138,11 +138,8 @@ export class POParser {
     let nowOption: POItemOption = {};
     let msgidN = NaN;
 
-    const isEmpty = (data?: PosData[], strict = true) => {
-      if (!data) return true;
-
-      for (const item of data) return strict ? item.value === '' : false;
-      return true;
+    const isEmpty = (data?: PosData[]): boolean => {
+      return !!data?.filter(Boolean).length;
     };
 
     const totalCount = document.lineCount;
@@ -211,13 +208,13 @@ export class POParser {
       /* ---- base parse ---- */
 
       // extracted-comments (#. )
-      if (line.startsWith(PREFIX_EXTRACTED_COMMENTS)) {
+      if (PREFIX_EXTRACTED_COMMENTS.test(line)) {
       }
       // reference (#: )
-      else if (line.startsWith(PREFIX_REFERENCES)) {
+      else if (PREFIX_REFERENCES.test(line)) {
       }
       // flag (#, )
-      else if (line.startsWith(PREFIX_FLAGS)) {
+      else if (PREFIX_FLAGS.test(line)) {
         nowOption.flags = {
           value: line.replace(/^#,/, '').trim().split(','),
           startLine: i,
@@ -226,11 +223,11 @@ export class POParser {
         };
       }
       // context (msgctxt ")
-      else if (line.startsWith(PREFIX_MSGCTXT)) {
+      else if (PREFIX_MSGCTXT.test(line)) {
         nowOption.msgctxt = nowAndDeep();
       }
       // untranslated-string (msgid ")
-      else if (line.startsWith(PREFIX_MSGID)) {
+      else if (PREFIX_MSGID.test(line)) {
         nowOption.msgid = nowAndDeep();
         const msgidData = postDataToRang(...(nowOption.msgid || []));
         if (!msgidData) continue;
@@ -258,11 +255,11 @@ export class POParser {
         }
       }
       // untranslated-string-plural (msgid_plural ")
-      else if (line.startsWith(PREFIX_MSGID_PLURAL)) {
+      else if (PREFIX_MSGID_PLURAL.test(line)) {
         nowOption.msgidPlural = nowAndDeep();
       }
       // translated-string (msgstr ")
-      else if (line.startsWith(PREFIX_MSGSTR)) {
+      else if (PREFIX_MSGSTR.test(line)) {
         const { msgid } = nowOption;
 
         if (nowOption.msgidPlural) {
@@ -316,7 +313,7 @@ export class POParser {
         nowOption = {};
       }
       // translated-string-case-N (msgstr[)
-      else if (line.startsWith(PREFIX_MSGSTR_PLURAL)) {
+      else if (PREFIX_MSGSTR_PLURAL.test(line)) {
         if (!nowOption.msgidPlural) {
           errors.push(makeDiagnostic('S003', new Range(i, 0, i, line.length)));
         } else {
@@ -349,7 +346,7 @@ export class POParser {
         }
       }
       // reset msgidPlural and else data
-      else if (!line.startsWith(PREFIX_MSGSTR_PLURAL)) {
+      else if (!PREFIX_MSGSTR_PLURAL.test(line)) {
         if (!Number.isNaN(msgidN)) items.push(new POItem(nowOption));
 
         msgidN = NaN;
