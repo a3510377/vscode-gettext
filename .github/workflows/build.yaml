@@ -1,0 +1,25 @@
+name: Releaser
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  releaser:
+    if: github.repository == 'a3510377/vscode-gettext' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - run: |
+          yarn global add @vscode/vsce
+          yarn --frozen-lockfile
+
+      - name: Build
+        run: vsce publish --yarn
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
