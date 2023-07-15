@@ -1,7 +1,15 @@
 import { ExtensionModule, flatten } from '../utils';
 
-import problems from './problems';
+import codeAction from './codeAction';
 import definition from './definition';
+import problems from './semanticTokens';
 
-export default ((ctx) =>
-  flatten(problems(ctx), definition(ctx))) as ExtensionModule;
+export default ((ctx) => {
+  const lib: ReturnType<ExtensionModule>[] = [
+    problems(ctx),
+    definition(ctx),
+    codeAction(ctx),
+  ];
+
+  return flatten(...lib);
+}) as ExtensionModule;

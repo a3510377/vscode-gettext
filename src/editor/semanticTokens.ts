@@ -1,20 +1,14 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import {
-  CodeAction,
-  CodeActionKind,
-  CodeActionProvider,
-  Command,
   DocumentSemanticTokensProvider,
   ProviderResult,
   SemanticTokens,
   SemanticTokensBuilder,
   SemanticTokensLegend,
   TextDocument,
-  WorkspaceEdit,
   languages,
 } from 'vscode';
 
-import { ErrorDataType, errorsHandler } from './problems_message';
 import { POData, postDataToRang } from '../core/parse';
 import { ExtensionModule } from '../utils';
 
@@ -23,9 +17,7 @@ const legend = new SemanticTokensLegend([
   'po-auto-storage-format',
 ]);
 
-export class ProblemProvider
-  implements DocumentSemanticTokensProvider, CodeActionProvider
-{
+export class SemanticTokensProvider implements DocumentSemanticTokensProvider {
   provideDocumentSemanticTokens(
     document: TextDocument
   ): ProviderResult<SemanticTokens> {
@@ -67,41 +59,14 @@ export class ProblemProvider
 
     return tokensBuilder.build();
   }
-
-  provideCodeActions(
-    document: TextDocument
-  ): ProviderResult<(CodeAction | Command)[]> {
-    const actions: CodeAction[] = [];
-
-    for (const diagnostic of languages.getDiagnostics(document.uri)) {
-      const errorData = diagnostic.code as ErrorDataType;
-      const errorCode = errorData.value;
-
-      if (errorsHandler?.[errorCode]) {
-        const quickFix = new CodeAction(
-          `fix ${errorCode}`,
-          CodeActionKind.QuickFix
-        );
-
-        quickFix.isPreferred = true;
-        quickFix.edit = new WorkspaceEdit();
-        quickFix.diagnostics = [diagnostic];
-
-        errorsHandler[errorCode]?.(document, quickFix.edit, diagnostic);
-
-        actions.push(quickFix);
-      }
-    }
-
-    return actions;
-  }
 }
 
 export default (() => {
-  const problem = new ProblemProvider();
-
   return [
-    languages.registerCodeActionsProvider('po', problem),
-    languages.registerDocumentSemanticTokensProvider('po', problem, legend),
+    languages.registerDocumentSemanticTokensProvider(
+      'po',
+      new SemanticTokensProvider(),
+      legend
+    ),
   ];
 }) as ExtensionModule;

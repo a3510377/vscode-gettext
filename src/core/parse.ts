@@ -9,8 +9,8 @@ import {
   EventEmitter,
 } from 'vscode';
 
-import { summonDiagnostic as makeDiagnostic } from '../editor/problems_message';
-import { langFormat } from './format-data';
+import { summonDiagnostic as makeDiagnostic } from '../editor/problemsMessage';
+import { langFormat } from './formatData';
 import path from 'path';
 
 type Optional<T = string> = T | undefined;
@@ -139,7 +139,7 @@ export class POParser {
     let msgidN = NaN;
 
     const isEmpty = (data?: PosData[]): boolean => {
-      return !!data?.filter(Boolean).length;
+      return !data?.filter(({ value }) => value).length;
     };
 
     const totalCount = document.lineCount;
@@ -220,16 +220,18 @@ export class POParser {
           const [key] = reference;
           const tmpCheck = nowOption.references[key];
           const start = baeStart + (reference.index || 0);
+          const end = start + key.length;
+
           const data: ParserPostData<string> = {
             endLine: i,
             startLine: i,
-            endPos: start + key.length,
+            endPos: end,
             value: key,
-            range: new Range(i, start, i, start + key.length),
+            range: new Range(i, start, i, end),
           };
 
           nowOption.references[key] ||= [];
-          nowOption.references[key].push();
+          nowOption.references[key].push(data);
 
           if (tmpCheck) {
             errors.push(
@@ -248,12 +250,14 @@ export class POParser {
           const [, split, key] = flag;
           const tmpCheck = nowOption.flags[key];
           const start = (flag.index || 0) + split.length;
+          const end = start + key.length;
+
           const data: ParserPostData<string> = {
             endLine: i,
             startLine: i,
-            endPos: (flag.index || 0) + split.length + key.length,
+            endPos: end,
             value: key,
-            range: new Range(i, start, i, start + key.length),
+            range: new Range(i, start, i, end),
           };
 
           nowOption.flags[key] ||= [];
@@ -335,7 +339,7 @@ export class POParser {
             nowAndDeep('\\n').forEach(
               ({ value, startLine, endLine, endPos }) => {
                 if (!value) return;
-
+                // TODO add hightlight
                 let [key, ...tmp] = value.split(':');
 
                 headers ||= {};
