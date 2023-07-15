@@ -1,5 +1,5 @@
 #: bot\core\help.py:95 bot\core\help.py:95
-#, python-format
+#, python-format, python-format, python-format
 msgid ""
 "`<>` 是必填的參數，`[]` 是選填的參數\n"
 "{command_doc}"

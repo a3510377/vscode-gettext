@@ -21,6 +21,8 @@ export enum ErrorCodeMessage {
 
   F001 = 'duplicate definition headers',
   F002 = 'same header name',
+  F003 = 'same flag name',
+  F004 = 'same reference name',
 }
 
 export type ErrorCodeMessageKeys = keyof typeof ErrorCodeMessage;
@@ -72,6 +74,8 @@ export const errorsHandler: Record<
 > = {
   F001: undefined,
   F002: undefined,
+  F003: undefined,
+  F004: undefined,
 
   S001(document, editor, diagnostic) {
     editor.replace(

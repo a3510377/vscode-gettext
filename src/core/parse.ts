@@ -212,15 +212,61 @@ export class POParser {
       }
       // reference (#: )
       else if (PREFIX_REFERENCES.test(line)) {
+        nowOption.references ||= {};
+
+        const splitPrefix = line.replace(PREFIX_REFERENCES, '');
+        const baeStart = line.length - splitPrefix.length;
+        for (const reference of splitPrefix.matchAll(/\S+:[\d;]*/g)) {
+          const [key] = reference;
+          const tmpCheck = nowOption.references[key];
+          const start = baeStart + (reference.index || 0);
+          const data: ParserPostData<string> = {
+            endLine: i,
+            startLine: i,
+            endPos: start + key.length,
+            value: key,
+            range: new Range(i, start, i, start + key.length),
+          };
+
+          nowOption.references[key] ||= [];
+          nowOption.references[key].push();
+
+          if (tmpCheck) {
+            errors.push(
+              makeDiagnostic('F004', data.range, DiagnosticSeverity.Warning, {
+                key,
+              })
+            );
+          }
+        }
       }
       // flag (#, )
       else if (PREFIX_FLAGS.test(line)) {
-        nowOption.flags = {
-          value: line.replace(/^#,/, '').trim().split(','),
-          startLine: i,
-          endLine: i,
-          endPos: line.length,
-        };
+        nowOption.flags ||= {};
+
+        for (const flag of line.matchAll(/(\G|,\s*)([\w-]+)/g)) {
+          const [, split, key] = flag;
+          const tmpCheck = nowOption.flags[key];
+          const start = (flag.index || 0) + split.length;
+          const data: ParserPostData<string> = {
+            endLine: i,
+            startLine: i,
+            endPos: (flag.index || 0) + split.length + key.length,
+            value: key,
+            range: new Range(i, start, i, start + key.length),
+          };
+
+          nowOption.flags[key] ||= [];
+          nowOption.flags[key].push(data);
+
+          if (tmpCheck) {
+            errors.push(
+              makeDiagnostic('F003', data.range, DiagnosticSeverity.Warning, {
+                key,
+              })
+            );
+          }
+        }
       }
       // context (msgctxt ")
       else if (PREFIX_MSGCTXT.test(line)) {
@@ -365,7 +411,8 @@ export class POParser {
 
 export interface POItemOption {
   msgid?: PosData[];
-  flags?: PosData<string[]>;
+  flags?: { [key: string]: ParserPostData<string>[] };
+  references?: { [key: string]: ParserPostData<string>[] };
   msgctxt?: PosData[];
   msgidPlural?: PosData[];
   msgstr?: PosData<string>[];
@@ -374,6 +421,7 @@ export interface POItemOption {
 
 export class POItem {
   public msgid: string;
+  public references: string[];
   public flags: string[];
   public msgstr: string;
   public msgctxt: string;
@@ -387,9 +435,16 @@ export class POItem {
 
     if (!msgid) throw new Error('msgid is required');
 
-    for (let flag of flags?.value?.map((flag) =>
-      flag.replace(/-format$/, '')
-    ) || []) {
+    this.references = Object.keys(options.references || {});
+    this.flags = Object.keys(flags || {});
+    this.msgid = postDataToRang(...msgid)?.value || '';
+    this.msgstr = postDataToRang(...(msgstr || []))?.value || '';
+    this.msgctxt = postDataToRang(...(msgctxt || []))?.value || '';
+    this.msgidPlural = postDataToRang(...(msgidPlural || []))?.value || '';
+    this.msgstrPlural =
+      msgstrPlural?.map((d) => postDataToRang(...d)?.value || '') || [];
+
+    for (let flag of this.flags.map((flag) => flag.replace(/-format$/, ''))) {
       if (flag.startsWith('no-')) continue;
 
       if (flag in langFormat) {
@@ -400,16 +455,6 @@ export class POItem {
         break;
       }
     }
-
-    this.msgid = postDataToRang(...msgid)?.value || '';
-    this.flags =
-      flags?.value.filter((now, i, data) => !data.includes(now, ++i)) || [];
-    this.msgstr = postDataToRang(...(msgstr || []))?.value || '';
-
-    this.msgctxt = postDataToRang(...(msgctxt || []))?.value || '';
-    this.msgidPlural = postDataToRang(...(msgidPlural || []))?.value || '';
-    this.msgstrPlural =
-      msgstrPlural?.map((d) => postDataToRang(...d)?.value || '') || [];
   }
 }
 
