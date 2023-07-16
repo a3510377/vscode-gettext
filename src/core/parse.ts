@@ -10,25 +10,25 @@ import {
 const exts = ['.po', '.pot'].map((ext) => ext.replace(/^\./, '')).join(',');
 
 /** translator-comments >> # */
-export const PREFIX_COMMENTS = /#/;
+export const PREFIX_COMMENTS = /^#/;
 /** flag >> #, */
-export const PREFIX_FLAGS = /#,/;
+export const PREFIX_FLAGS = /^#,/;
 /** extracted-comments >> #. */
-export const PREFIX_AUTO_COMMENTS = /#./;
+export const PREFIX_AUTO_COMMENTS = /^#./;
 /** reference >> #: */
-export const PREFIX_REFERENCES = /#:/;
+export const PREFIX_REFERENCES = /^#:/;
 /** previous-untranslated >> #| */
-export const PREFIX_PREV = /#\|/;
+export const PREFIX_PREV = /^#\|/;
 /** context >> msgctxt */
-export const PREFIX_MSGCTXT = /msgctxt +"/;
+export const PREFIX_MSGCTXT = /^msgctxt +"/;
 /** untranslated-string >> msgid */
-export const PREFIX_MSGID = /msgid +"/;
+export const PREFIX_MSGID = /^msgid +"/;
 /** untranslated-string-plural >> msgid_plural */
-export const PREFIX_MSGID_PLURAL = /msgid_plural +"/;
+export const PREFIX_MSGID_PLURAL = /^msgid_plural +"/;
 /** translated-string >> msgstr */
-export const PREFIX_MSGSTR = /msgstr +"/;
+export const PREFIX_MSGSTR = /^msgstr +"/;
 /** translated-string-case-n >> msgstr[ */
-export const PREFIX_MSGSTR_PLURAL = /msgstr\[/;
+export const PREFIX_MSGSTR_PLURAL = /^msgstr\[/;
 
 export class POParser {
   constructor(public document: TextDocument) {}
@@ -116,13 +116,14 @@ export class POData {
 }
 
 export interface POItemOption {
-  flags?: { [key: string]: PosData<string>[] };
-  references?: { [key: string]: PosData<string>[] };
+  comments?: PosData[];
+  flags?: { [key: string]: PosData[] };
+  references?: { [key: string]: PosData[] };
   msgctxt?: PosData[];
   msgidPlural?: PosData[];
   msgid?: PosData[];
-  msgstr?: PosData<string>[];
-  msgstrPlural?: PosData<string>[][];
+  msgstr?: PosData[];
+  msgstrPlural?: PosData[][];
 }
 
 export class POItem {
