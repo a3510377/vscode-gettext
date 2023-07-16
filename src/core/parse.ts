@@ -10,9 +10,9 @@ import {
 const exts = ['.po', '.pot'].map((ext) => ext.replace(/^\./, '')).join(',');
 
 /** translator-comments >> # */
-export const PREFIX_COMMENTS = /^#/;
+export const PREFIX_COMMENTS = /^# */;
 /** flag >> #, */
-export const PREFIX_FLAGS = /^#,/;
+export const PREFIX_FLAGS = /^#, */;
 /** extracted-comments >> #. */
 export const PREFIX_AUTO_COMMENTS = /^#./;
 /** reference >> #: */
@@ -37,26 +37,56 @@ export class POParser {
     for (let i = 0; i < this.document.lineCount; i++) {
       const { text } = this.document.lineAt(i);
 
-      // translator-comments >> #
-      if (PREFIX_COMMENTS.test(text)) {
-      } // flag >> #,
-      else if (PREFIX_FLAGS.test(text)) {
+      const getValue = (offset = 0, match = /(.*)/): PosData | undefined => {
+        const baseValue = text.slice(offset).trimEnd();
+        const startPos = text.length - baseValue.length;
+        const value = baseValue.match(match)?.[1];
+
+        if (value) {
+          return {
+            value,
+            endLine: i,
+            statLine: i,
+            range: new Range(i, startPos, i, startPos + value.length),
+          };
+        }
+      };
+      const getText = (offset: number = 0) => getValue(offset, /(.*)(?<!\\)"/);
+      // const getDeepText = (): PosData => {};
+      const updateOffset = (regex: RegExp, value?: string) => {
+        return (value || text).match(regex)?.[0].length || 0;
+      };
+
+      // flag >> #,
+      if (PREFIX_FLAGS.test(text)) {
+        console.log(getValue(updateOffset(PREFIX_FLAGS)));
       } // extracted-comments >> #.
       else if (PREFIX_AUTO_COMMENTS.test(text)) {
+        console.log(getValue(updateOffset(PREFIX_AUTO_COMMENTS)));
       } // reference >> #:
       else if (PREFIX_REFERENCES.test(text)) {
+        console.log(getValue(updateOffset(PREFIX_REFERENCES)));
       } // previous-untranslated >> #|
       else if (PREFIX_PREV.test(text)) {
+        console.log(getValue(updateOffset(PREFIX_PREV)));
       } // context >> msgctxt
+      else if (PREFIX_COMMENTS.test(text)) {
+        console.log(getText(updateOffset(PREFIX_COMMENTS)));
+      } // translator-comments >> #
       else if (PREFIX_MSGCTXT.test(text)) {
+        console.log(getText(updateOffset(PREFIX_MSGCTXT)));
       } // untranslated-string >> msgid
       else if (PREFIX_MSGID.test(text)) {
+        console.log(getText(updateOffset(PREFIX_MSGID)));
       } // untranslated-string-plural >> msgid_plural
       else if (PREFIX_MSGID_PLURAL.test(text)) {
+        console.log(getText(updateOffset(PREFIX_MSGID_PLURAL)));
       } // translated-string >> msgstr
       else if (PREFIX_MSGSTR.test(text)) {
+        console.log(getText(updateOffset(PREFIX_MSGSTR)));
       } // translated-string-case-n >> msgstr[
       else if (PREFIX_MSGSTR_PLURAL.test(text)) {
+        console.log(getText(updateOffset(PREFIX_MSGSTR_PLURAL)));
       }
     }
     return [];
