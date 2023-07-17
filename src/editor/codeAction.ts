@@ -43,8 +43,6 @@ export class ProblemProvider implements CodeActionProvider {
   }
 }
 
-export default (() => {
-  const problem = new ProblemProvider();
-
-  return [languages.registerCodeActionsProvider('po', problem)];
-}) as ExtensionModule;
+export default (() => [
+  languages.registerCodeActionsProvider('po', new ProblemProvider()),
+]) as ExtensionModule;

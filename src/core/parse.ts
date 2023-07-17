@@ -1,5 +1,6 @@
 import {
   Diagnostic,
+  DiagnosticSeverity,
   EventEmitter,
   Range,
   TextDocument,
@@ -7,18 +8,20 @@ import {
   workspace,
 } from 'vscode';
 
+import { summonDiagnostic } from '../editor/problemsMessage';
+
 const exts = ['.po', '.pot'].map((ext) => ext.replace(/^\./, '')).join(',');
 
-/** translator-comments >> # */
-export const PREFIX_COMMENTS = /^# */;
 /** flag >> #, */
 export const PREFIX_FLAGS = /^#, */;
 /** extracted-comments >> #. */
-export const PREFIX_AUTO_COMMENTS = /^#./;
+export const PREFIX_AUTO_COMMENTS = /^#\./;
 /** reference >> #: */
-export const PREFIX_REFERENCES = /^#:/;
+export const PREFIX_REFERENCES = /^#: */;
 /** previous-untranslated >> #| */
 export const PREFIX_PREV = /^#\|/;
+/** translator-comments >> # */
+export const PREFIX_COMMENTS = /^# */;
 /** context >> msgctxt */
 export const PREFIX_MSGCTXT = /^msgctxt +"/;
 /** untranslated-string >> msgid */
@@ -34,8 +37,12 @@ export class POParser {
   constructor(public document: TextDocument) {}
 
   parse(): Diagnostic[] {
+    const errors: Diagnostic[] = [];
+    // const items: (POItem | undefined)[] = [];
+
     for (let i = 0; i < this.document.lineCount; i++) {
       const { text } = this.document.lineAt(i);
+      let tmpOption: POItemOption = {};
 
       const getValue = (offset = 0, match = /(.*)/): PosData | undefined => {
         const baseValue = text.slice(offset).trimEnd();
@@ -59,37 +66,100 @@ export class POParser {
 
       // flag >> #,
       if (PREFIX_FLAGS.test(text)) {
-        console.log(getValue(updateOffset(PREFIX_FLAGS)));
+        const offset = updateOffset(PREFIX_FLAGS);
+        const tmp = getValue(offset);
+        if (!tmp) continue;
+
+        tmpOption.flags ||= {};
+        for (const flag of `,${tmp.value}`.matchAll(/(\G|, *)([\w-]+)/g)) {
+          const [, split, key] = flag;
+          const tmpCheck = tmpOption.flags[key];
+          const start = offset + (flag.index || 0) + split.length - 1;
+          const data: PosData = {
+            range: new Range(i, start, i, start + key.length),
+            endLine: i,
+            statLine: i,
+            value: key,
+          };
+
+          tmpOption.flags[key] ||= [];
+          tmpOption.flags[key].push(data);
+
+          if (tmpCheck) {
+            errors.push(
+              summonDiagnostic('F003', data.range, DiagnosticSeverity.Warning, {
+                key,
+              })
+            );
+          }
+        }
       } // extracted-comments >> #.
       else if (PREFIX_AUTO_COMMENTS.test(text)) {
-        console.log(getValue(updateOffset(PREFIX_AUTO_COMMENTS)));
+        // TODO add extracted-comment
+        // const tmp = getValue(updateOffset(PREFIX_AUTO_COMMENTS));
       } // reference >> #:
       else if (PREFIX_REFERENCES.test(text)) {
-        console.log(getValue(updateOffset(PREFIX_REFERENCES)));
+        const offset = updateOffset(PREFIX_REFERENCES);
+        const tmp = getValue(offset);
+        if (!tmp) continue;
+
+        tmpOption.references ||= {};
+        for (const reference of tmp.value.matchAll(/\S+:[\d;]*/g)) {
+          const [key] = reference;
+          const tmpCheck = tmpOption.references[key];
+          const start = offset + (reference.index || 0);
+          const data: PosData = {
+            range: new Range(i, start, i, start + key.length),
+            endLine: i,
+            statLine: i,
+            value: key,
+          };
+
+          tmpOption.references[key] ||= [];
+          tmpOption.references[key].push(data);
+
+          if (tmpCheck) {
+            errors.push(
+              summonDiagnostic('F004', data.range, DiagnosticSeverity.Warning, {
+                key,
+              })
+            );
+          }
+        }
       } // previous-untranslated >> #|
       else if (PREFIX_PREV.test(text)) {
-        console.log(getValue(updateOffset(PREFIX_PREV)));
-      } // context >> msgctxt
-      else if (PREFIX_COMMENTS.test(text)) {
-        console.log(getText(updateOffset(PREFIX_COMMENTS)));
+        // const tmp = getValue(updateOffset(PREFIX_PREV));
       } // translator-comments >> #
+      else if (PREFIX_COMMENTS.test(text)) {
+        const tmp = getValue(updateOffset(PREFIX_COMMENTS));
+
+        tmpOption.comments ||= [];
+        tmp && tmpOption.comments.push(tmp);
+      } // context >> msgctxt
       else if (PREFIX_MSGCTXT.test(text)) {
-        console.log(getText(updateOffset(PREFIX_MSGCTXT)));
+        getText(updateOffset(PREFIX_MSGCTXT));
       } // untranslated-string >> msgid
       else if (PREFIX_MSGID.test(text)) {
-        console.log(getText(updateOffset(PREFIX_MSGID)));
+        getText(updateOffset(PREFIX_MSGID));
       } // untranslated-string-plural >> msgid_plural
       else if (PREFIX_MSGID_PLURAL.test(text)) {
-        console.log(getText(updateOffset(PREFIX_MSGID_PLURAL)));
+        getText(updateOffset(PREFIX_MSGID_PLURAL));
       } // translated-string >> msgstr
       else if (PREFIX_MSGSTR.test(text)) {
-        console.log(getText(updateOffset(PREFIX_MSGSTR)));
+        getText(updateOffset(PREFIX_MSGSTR));
+        tmpOption = {};
       } // translated-string-case-n >> msgstr[
       else if (PREFIX_MSGSTR_PLURAL.test(text)) {
-        console.log(getText(updateOffset(PREFIX_MSGSTR_PLURAL)));
+        getText(updateOffset(PREFIX_MSGSTR_PLURAL));
+      } else {
+        // TODO add error message
+        tmpOption = {};
       }
     }
-    return [];
+
+    console.log(errors);
+
+    return errors;
   }
 }
 
@@ -129,8 +199,8 @@ export class POData {
       });
     });
 
-    workspace.onDidChangeTextDocument((d) => {
-      this.getStaticDocuments(d.document);
+    workspace.onDidChangeTextDocument(({ document }) => {
+      this.getStaticDocuments(document);
     });
   }
 
@@ -157,6 +227,7 @@ export interface POItemOption {
 }
 
 export class POItem {
+  public comments: string[];
   public flags: string[];
   public references: string[];
   public msgctxt?: string;
@@ -166,6 +237,7 @@ export class POItem {
   public msgstrPlural?: string[];
 
   constructor(public option: POItemOption) {
+    this.comments = option.comments?.map(({ value }) => value) || [];
     this.flags = Object.keys(option.flags || {});
     this.references = Object.keys(option.references || {});
 

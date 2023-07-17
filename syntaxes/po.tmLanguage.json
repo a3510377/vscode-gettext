@@ -108,7 +108,7 @@
         },
         {
           "name": "comment.line.number-sign.reference.po",
-          "begin": ":\\s*",
+          "begin": ": *",
           "end": "$",
           "patterns": [
             {
@@ -123,7 +123,7 @@
           "end": "$",
           "patterns": [
             {
-              "match": "(?x)\n(?:\\G|,\\s*)\n(\n  (?:fuzzy)|\n  (?:no-)?(?:\n    c|objc|python|python-brace|java|java-printf|csharp|javascript|\n    scheme|lisp|elisp|librep|ruby|sh|awk|lua|object-pascal|smalltalk|\n    qt|qt-plural|kde|boost|tcl|perl|perl-brace|php|gcc-internal|\n    gfc-internal|ycp\n  )-format\n)",
+              "match": "(?x)\n(?:\\G|, *)\n(\n  (?:fuzzy)|\n  (?:no-)?(?:\n    c|objc|python|python-brace|java|java-printf|csharp|javascript|\n    scheme|lisp|elisp|librep|ruby|sh|awk|lua|object-pascal|smalltalk|\n    qt|qt-plural|kde|boost|tcl|perl|perl-brace|php|gcc-internal|\n    gfc-internal|ycp\n  )-format\n)",
               "captures": {
                 "1": {
                   "name": "entity.name.type.flag.po"
