@@ -1,4 +1,7 @@
 #: test.py:2
 #, python-format, c-format
-msgid "test"
-msgstr "test\"awa"
+msgid "awa"
+"test"
+msgstr "XDD"
+"test1"
+"test2"

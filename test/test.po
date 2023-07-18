@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
-"POT-Creation-Date: 2023-04-27 22:10+0800\n"
+"POT-Creation-Date: 2023-04-02 18:21+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: FULL NAME <EMAIL@ADDRESS>\n"
@@ -13,47 +13,140 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: dpy-template 1.0.0\n"
 
-#: bot\core\commands.py:119 bot\core\commands.py:119 bot\core\help.py:82
-#: bot\core\help.py:82
-msgid "指令 \n \t \a \u0015 \x11 \U11111111 \""
+#: bot\cogs\admin\clear.py:10
+msgid "管理"
 msgstr ""
 
-#: bot\core\commands.py:120 bot\core\commands.py:120
-msgid "要查詢的指令"
-msgstr ""
+#: bot\cogs\admin\clear.py:13
+msgid "刪除"
+msgstr "delete"
 
-#: bot\core\help.py:76 bot\core\help.py:76
-msgid "看起來某人很懶，並沒有留下任何東西 owo"
-msgstr ""
+#: bot\cogs\admin\clear.py:14
+msgid "刪除一個訊息"
+msgstr "Delete a message"
 
-#: bot\core\help.py:94 bot\core\help.py:94
-msgid "**格式**"
-msgstr ""
+#: bot\cogs\admin\clear.py:20
+msgid "訊息id"
+msgstr "message_id"
 
-#: bot\core\help.py:95 bot\core\help.py:95
+#: bot\cogs\admin\clear.py:21
+msgid "要刪除的訊息 ID"
+msgstr "The message's ID that you want to delete"
+
+#: bot\cogs\admin\clear.py:26 bot\cogs\admin\clear.py:62
+#: bot\cogs\admin\clear.py:63
+msgid "原因"
+msgstr "reason"
+
+#: bot\cogs\admin\clear.py:27
+msgid "刪除訊息的原因"
+msgstr "The reason for delete message"
+
+#: bot\cogs\admin\clear.py:36 bot\cogs\admin\clear.py:123
 #, python-format
-msgid ""
-"`<>` 是必填的參數，`[]` 是選填的參數\n"
-"{command_doc}"
-msgstr ""
+msgid "由 {ctx.author} 清除 - {reason}"
+msgstr "Deleted by {ctx.author} - {reason}"
 
-#: bot\core\help.py:128 bot\core\help.py:128
+#: bot\cogs\admin\clear.py:39 bot\cogs\admin\clear.py:104
+msgid "無原因"
+msgstr "No reason"
+
+#: bot\cogs\admin\clear.py:44
+msgid "刪除完畢"
+msgstr "Delete complete"
+
+#: bot\cogs\admin\clear.py:55
+msgid "批量刪除"
+msgstr "purge"
+
+#: bot\cogs\admin\clear.py:56
+msgid "刪除大量訊息"
+msgstr "Delete some messages"
+
+#: bot\cogs\admin\clear.py:69
+msgid "成員"
+msgstr "member"
+
+#: bot\cogs\admin\clear.py:70
+msgid "要刪除的成員訊息"
+msgstr "The messages' author that want to be deleted"
+
+#: bot\cogs\admin\clear.py:76
+msgid "數量"
+msgstr "count"
+
+#: bot\cogs\admin\clear.py:77
+msgid "輸入要刪除的訊息數量"
+msgstr "Enter the messages count that want to be deleted"
+
+#: bot\cogs\admin\clear.py:84
+msgid "以前"
+msgstr "before"
+
+#: bot\cogs\admin\clear.py:85
+msgid "刪除這則訊息以前的訊息(請輸入訊息ID)"
+msgstr "Delete the messages before this message(Please enter message ID)"
+
+#: bot\cogs\admin\clear.py:91
+msgid "之後"
+msgstr "after"
+
+#: bot\cogs\admin\clear.py:92
+msgid "刪除以這則訊息以後的訊息(請輸入訊息ID)"
+msgstr "Delete the messages after this message(Please enter message ID)"
+
+#: bot\cogs\admin\clear.py:107
+msgid "錯誤!"
+msgstr "Error!"
+
+#: bot\cogs\admin\clear.py:108
+msgid "`before` 和 `after` 選項不得同時出現"
+msgstr "`before` and `after` options can not be showed on the same time"
+
+#: bot\cogs\admin\clear.py:125 bot\cogs\admin\clear.py:130
 #, python-format
-msgid "{bot.user} 指令列表"
-msgstr ""
+msgid "原因: {reason}"
+msgstr "Reason: {reason}"
 
-#: bot\core\help.py:129 bot\core\help.py:129
-msgid "伺服器數量"
-msgstr ""
+#: bot\cogs\admin\clear.py:129
+msgid "訊息刪除成功!"
+msgstr "Message delete successfully"
 
-#: bot\core\help.py:131 bot\core\help.py:131
-msgid "機器人延遲"
-msgstr ""
+#: bot\cogs\admin\mc.py:16
+msgid "Minecraft admin"
+msgstr "Minecraft admin"
 
-#: bot\core\help.py:132 bot\core\help.py:132
+#: bot\cogs\admin\mc.py:19
+msgid "添加白單"
+msgstr "add whitelist"
+
+#: bot\cogs\admin\mc.py:20
+msgid "添加雲鎮二審成員 & 添加白名單"
+msgstr "Add members of the second instance of CT & add a whitelist"
+
+#: bot\cogs\admin\mc.py:25 bot\cogs\admin\mc.py:26
+msgid "對應的 DC 成員"
+msgstr "Corresponding DC member"
+
+#: bot\cogs\admin\mc.py:31
+msgid "Minecraft ID"
+msgstr "Minecraft ID"
+
+#: bot\cogs\admin\mc.py:32
+msgid "該用戶的 MC_ID"
+msgstr "The user's MC_ID"
+
+#: bot\cogs\admin\mc.py:38
+msgid "你並非審核人員，無法使用此指令"
+msgstr "You are not an auditor and cannot use this directive"
+
+#: bot\cogs\admin\mc.py:60
+msgid "身份組已添加完成"
+msgstr "The identity group has been added"
+
+#: bot\cogs\admin\mc.py:61
 #, python-format
-msgid "{time:.2f} ms"
-msgstr ""
-
-#~ msgid "`<>` 是必填的參數，`[]` 是選填的參數"
-#~ msgstr ""
+msgid "已將 {user.mention} 添加二審身份組\n"
+"MC_ID: {mc_id}"
+msgstr "{user.mention} has been added to the second-instance identity groupn"
+"MC_ID: {mc_id}"

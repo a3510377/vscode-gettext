@@ -44,7 +44,9 @@ export class POParser {
       const { text } = this.document.lineAt(i);
       let tmpOption: POItemOption = {};
 
+      /** get from offset to end PosData */
       const getValue = (offset = 0, match = /(.*)/): PosData | undefined => {
+        const { text } = this.document.lineAt(i);
         const baseValue = text.slice(offset).trimEnd();
         const startPos = text.length - baseValue.length;
         const value = baseValue.match(match)?.[1];
@@ -58,15 +60,38 @@ export class POParser {
           };
         }
       };
-      const getText = (offset: number = 0) => getValue(offset, /(.*)(?<!\\)"/);
-      // const getDeepText = (): PosData => {};
-      const updateOffset = (regex: RegExp, value?: string) => {
+      /** get from offset to end text data PosData */
+      const getText = (offset = 0) => getValue(offset, /(.*)(?<!\\)"/);
+      /** get multi-line text PosData */
+      const getDeepText = (): PosData[] => {
+        const tmp: PosData[] = [];
+
+        for (i++; i < this.document.lineCount; i++) {
+          const { text } = this.document.lineAt(i);
+          const data = text.match(/^[ \t]*"/);
+
+          if (!data) break;
+
+          const t = getText(data[0].length);
+          t && tmp.push(t);
+        }
+        i--;
+
+        return tmp;
+      };
+      /** get now line and next multi-line text PosData */
+      const getNowAndDeepText = (offset = 0) => {
+        const t = getText(offset);
+        return t ? [t, ...getDeepText()] : getDeepText();
+      };
+      /** get offset from regex */
+      const getOffset = (regex: RegExp, value?: string) => {
         return (value || text).match(regex)?.[0].length || 0;
       };
 
       // flag >> #,
       if (PREFIX_FLAGS.test(text)) {
-        const offset = updateOffset(PREFIX_FLAGS);
+        const offset = getOffset(PREFIX_FLAGS);
         const tmp = getValue(offset);
         if (!tmp) continue;
 
@@ -95,11 +120,10 @@ export class POParser {
         }
       } // extracted-comments >> #.
       else if (PREFIX_AUTO_COMMENTS.test(text)) {
-        // TODO add extracted-comment
         // const tmp = getValue(updateOffset(PREFIX_AUTO_COMMENTS));
       } // reference >> #:
       else if (PREFIX_REFERENCES.test(text)) {
-        const offset = updateOffset(PREFIX_REFERENCES);
+        const offset = getOffset(PREFIX_REFERENCES);
         const tmp = getValue(offset);
         if (!tmp) continue;
 
@@ -131,33 +155,31 @@ export class POParser {
         // const tmp = getValue(updateOffset(PREFIX_PREV));
       } // translator-comments >> #
       else if (PREFIX_COMMENTS.test(text)) {
-        const tmp = getValue(updateOffset(PREFIX_COMMENTS));
+        const tmp = getValue(getOffset(PREFIX_COMMENTS));
 
         tmpOption.comments ||= [];
         tmp && tmpOption.comments.push(tmp);
       } // context >> msgctxt
       else if (PREFIX_MSGCTXT.test(text)) {
-        getText(updateOffset(PREFIX_MSGCTXT));
+        getNowAndDeepText(getOffset(PREFIX_MSGCTXT));
       } // untranslated-string >> msgid
       else if (PREFIX_MSGID.test(text)) {
-        getText(updateOffset(PREFIX_MSGID));
+        console.log('msgid:', getNowAndDeepText(getOffset(PREFIX_MSGID)));
       } // untranslated-string-plural >> msgid_plural
       else if (PREFIX_MSGID_PLURAL.test(text)) {
-        getText(updateOffset(PREFIX_MSGID_PLURAL));
+        getNowAndDeepText(getOffset(PREFIX_MSGID_PLURAL));
       } // translated-string >> msgstr
       else if (PREFIX_MSGSTR.test(text)) {
-        getText(updateOffset(PREFIX_MSGSTR));
+        console.log('msgstr:', getNowAndDeepText(getOffset(PREFIX_MSGSTR)));
         tmpOption = {};
       } // translated-string-case-n >> msgstr[
       else if (PREFIX_MSGSTR_PLURAL.test(text)) {
-        getText(updateOffset(PREFIX_MSGSTR_PLURAL));
+        getNowAndDeepText(getOffset(PREFIX_MSGSTR_PLURAL));
       } else {
         // TODO add error message
         tmpOption = {};
       }
     }
-
-    console.log(errors);
 
     return errors;
   }
