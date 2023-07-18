@@ -9,6 +9,8 @@ import {
 } from 'vscode';
 
 import { summonDiagnostic } from '../editor/problemsMessage';
+import { langFormat } from './formatData';
+import { orRegexp } from '../utils';
 
 const exts = ['.po', '.pot'].map((ext) => ext.replace(/^\./, '')).join(',');
 
@@ -35,14 +37,15 @@ export const PREFIX_MSGSTR_PLURAL = /^msgstr\[/;
 
 export class POParser {
   constructor(public document: TextDocument) {}
+  items: POItem[] = [];
 
   parse(): Diagnostic[] {
     const errors: Diagnostic[] = [];
-    // const items: (POItem | undefined)[] = [];
+    const items: POItem[] = [];
+    let tmpOption: POItemOption = {};
 
     for (let i = 0; i < this.document.lineCount; i++) {
       const { text } = this.document.lineAt(i);
-      let tmpOption: POItemOption = {};
 
       /** get from offset to end PosData */
       const getValue = (offset = 0, match = /(.*)/): PosData | undefined => {
@@ -161,25 +164,33 @@ export class POParser {
         tmp && tmpOption.comments.push(tmp);
       } // context >> msgctxt
       else if (PREFIX_MSGCTXT.test(text)) {
-        getNowAndDeepText(getOffset(PREFIX_MSGCTXT));
+        tmpOption.msgctxt = getNowAndDeepText(getOffset(PREFIX_MSGCTXT));
       } // untranslated-string >> msgid
       else if (PREFIX_MSGID.test(text)) {
-        console.log('msgid:', getNowAndDeepText(getOffset(PREFIX_MSGID)));
+        tmpOption.msgid = getNowAndDeepText(getOffset(PREFIX_MSGID));
       } // untranslated-string-plural >> msgid_plural
       else if (PREFIX_MSGID_PLURAL.test(text)) {
-        getNowAndDeepText(getOffset(PREFIX_MSGID_PLURAL));
+        tmpOption.msgidPlural = getNowAndDeepText(
+          getOffset(PREFIX_MSGID_PLURAL)
+        );
       } // translated-string >> msgstr
       else if (PREFIX_MSGSTR.test(text)) {
-        console.log('msgstr:', getNowAndDeepText(getOffset(PREFIX_MSGSTR)));
+        tmpOption.msgstr = getNowAndDeepText(getOffset(PREFIX_MSGSTR));
+
+        items.push(new POItem(tmpOption));
         tmpOption = {};
       } // translated-string-case-n >> msgstr[
       else if (PREFIX_MSGSTR_PLURAL.test(text)) {
         getNowAndDeepText(getOffset(PREFIX_MSGSTR_PLURAL));
       } else {
+        if (!text.trim()) continue;
+
         // TODO add error message
         tmpOption = {};
       }
     }
+
+    this.items = items;
 
     return errors;
   }
@@ -257,22 +268,29 @@ export class POItem {
   public msgid?: string;
   public msgstr?: string;
   public msgstrPlural?: string[];
+  public formatRegex = langFormat.python;
 
-  constructor(public option: POItemOption) {
-    this.comments = option.comments?.map(({ value }) => value) || [];
-    this.flags = Object.keys(option.flags || {});
-    this.references = Object.keys(option.references || {});
+  constructor(public options: POItemOption) {
+    this.comments = options.comments?.map(({ value }) => value) || [];
+    this.flags = Object.keys(options.flags || {});
+    this.references = Object.keys(options.references || {});
 
     const parseString = (data?: PosData[]) => {
       return data?.map(({ value }) => value).join('');
     };
 
-    this.msgctxt = parseString(option.msgctxt);
-    this.msgidPlural = parseString(option.msgidPlural);
-    this.msgid = parseString(option.msgid);
-    this.msgstr = parseString(option.msgstr);
-    this.msgstrPlural = option.msgstrPlural?.map((d) =>
+    this.msgctxt = parseString(options.msgctxt);
+    this.msgidPlural = parseString(options.msgidPlural);
+    this.msgid = parseString(options.msgid);
+    this.msgstr = parseString(options.msgstr);
+    this.msgstrPlural = options.msgstrPlural?.map((d) =>
       d.map(({ value }) => value).join('')
     );
+
+    const regex = Object.keys(options.flags || {})
+      .map((d) => d.replace(/-format$/, ''))
+      .map((d) => langFormat[d as keyof typeof langFormat])
+      .filter(Boolean);
+    this.formatRegex = orRegexp('g', ...regex);
   }
 }

@@ -1,7 +1,7 @@
 import { Disposable, ExtensionContext } from 'vscode';
 
 export const orRegexp = (flags?: string, ...regexps: RegExp[]) => {
-  return new RegExp(regexps.map((r) => `(?:${r.source})`, flags).join('|'));
+  return new RegExp(regexps.map((r) => `(?:${r.source})`).join('|'), flags);
 };
 
 export const flatten = <T>(...array: (ReadonlyArray<T> | T)[]): T[] => {
