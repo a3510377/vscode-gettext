@@ -17,7 +17,7 @@ patterns:
   #         '3': { name: string.other.po }
 
   - begin: ^\s*$|^(?=msgid(_plural)?|msgctxt)
-    end: \Z
+    end: \z
     patterns: [include: '#body']
 
   - include: '#comments'

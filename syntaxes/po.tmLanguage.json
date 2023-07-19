@@ -4,7 +4,7 @@
   "patterns": [
     {
       "begin": "^\\s*$|^(?=msgid(_plural)?|msgctxt)",
-      "end": "\\Z",
+      "end": "\\z",
       "patterns": [
         {
           "include": "#body"
