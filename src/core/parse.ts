@@ -291,6 +291,7 @@ export class POItem {
       .map((d) => d.replace(/-format$/, ''))
       .map((d) => langFormat[d as keyof typeof langFormat])
       .filter(Boolean);
-    this.formatRegex = orRegexp('g', ...regex);
+
+    if (regex.length) this.formatRegex = orRegexp('g', ...regex);
   }
 }
