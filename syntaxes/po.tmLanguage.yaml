@@ -43,14 +43,12 @@ repository:
       - name: comment.line.number-sign.extracted.po
         begin: \.
         end: $
-        patterns: [include: '#strings']
 
       # #|
       # msgid previous-untranslated-string
       - name: comment.line.number-sign.previous.po
         begin: \|
         end: $
-        patterns: [include: '#strings']
 
       # #:
       # reference...
