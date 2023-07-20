@@ -150,3 +150,12 @@ msgid "已將 {user.mention} 添加二審身份組\n"
 "MC_ID: {mc_id}"
 msgstr "{user.mention} has been added to the second-instance identity groupn"
 "MC_ID: {mc_id}"
+
+#. This is a proper name.  See the gettext
+#. manual, section Names.  Note this is actually a non-ASCII
+#. name: The first name is (with Unicode escapes)
+#. "Fran\u00e7ois" or (with HTML entities) "Fran&ccedil;ois".
+#. Pronunciation is like "fraa-swa pee-nar".
+msgid "Francois Pinard"
+msgstr "\phi\rho\alpha\sigma\omicron\alpha \pi\iota\nu\alpha\rho"
+       " (Francois Pinard)"

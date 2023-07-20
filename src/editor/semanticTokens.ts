@@ -15,6 +15,8 @@ import { POData } from '../core/parse';
 const legend = new SemanticTokensLegend([
   'po-auto-format-placeholder',
   'po-auto-storage-format',
+  // 'constant.language.po',
+  // 'string.other.po',
 ]);
 
 export class SemanticTokensProvider implements DocumentSemanticTokensProvider {
