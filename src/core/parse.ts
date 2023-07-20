@@ -64,7 +64,7 @@ export class POParser {
         }
       };
       /** get from offset to end text data PosData */
-      const getText = (offset = 0) => getValue(offset, /(.*)(?<!\\)"/);
+      const getText = (offset = 0) => getValue(offset, /((?:[^"\\]|\\.)*)"/);
       /** get multi-line text PosData */
       const getDeepText = (): PosData[] => {
         const tmp: PosData[] = [];
