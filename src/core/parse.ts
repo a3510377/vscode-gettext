@@ -115,9 +115,7 @@ export class POParser {
 
           if (tmpCheck) {
             errors.push(
-              summonDiagnostic('F003', data.range, DiagnosticSeverity.Warning, {
-                key,
-              })
+              summonDiagnostic('F003', data.range, DiagnosticSeverity.Warning)
             );
           }
         }
@@ -147,9 +145,7 @@ export class POParser {
 
           if (tmpCheck) {
             errors.push(
-              summonDiagnostic('F004', data.range, DiagnosticSeverity.Warning, {
-                key,
-              })
+              summonDiagnostic('F004', data.range, DiagnosticSeverity.Warning)
             );
           }
         }
@@ -176,12 +172,13 @@ export class POParser {
       } // translated-string >> msgstr
       else if (PREFIX_MSGSTR.test(text)) {
         // has is header
+        const tmp = getNowAndDeepText(getOffset(PREFIX_MSGSTR));
+
         if (!tmpOption.msgid?.map(({ value }) => value).join('')) {
           tmpOption.headers ||= {};
-
           // TODO add header parse
         } // has is translated string
-        else tmpOption.msgstr = getNowAndDeepText(getOffset(PREFIX_MSGSTR));
+        else tmpOption.msgstr = tmp;
 
         items.push(new POItem(tmpOption));
         tmpOption = {};
