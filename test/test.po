@@ -144,6 +144,11 @@ msgstr "You are not an auditor and cannot use this directive"
 msgid "身份組已添加完成"
 msgstr "The identity group has been added"
 
+#: bot\cogs\admin\mc.py:60
+msgid ""
+"a"
+msgstr "The identity group has been added"
+
 #: bot\cogs\admin\mc.py:61
 #, python-format
 msgid "已將 {user.mention} 添加二審身份組\n"
