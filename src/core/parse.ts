@@ -284,8 +284,13 @@ export class POParser {
         const { value, range } = msgidData;
 
         const relatedInformation: DiagnosticRelatedInformation[] = items
-          .map(({ msgid, msgstr, options }) => {
-            if (msgid === value) {
+          .map(({ msgid, msgstr, options, msgctxt }) => {
+            if (
+              msgid === value &&
+              // fix for issue #1
+              // https://github.com/a3510377/vscode-gettext/issues/1
+              postDataToRang(...(nowOption.msgctxt || []))?.value === msgctxt
+            ) {
               return {
                 message: `${msgid}: ${msgstr}`,
                 location: {
