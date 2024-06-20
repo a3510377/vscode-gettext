@@ -22,7 +22,7 @@ export class DefinitionProvider implements VscodeDefinitionProvider {
     if (poLine.startsWith('#: ')) {
       const [path, line] = poLine.split(' ')[1].split(':');
 
-      return workspace.findFiles(path).then((files) => {
+      return workspace.findFiles(`**/${path}`, '**/node_modules/**').then((files) => {
         if (!files) return;
         const sourcePosition = new Position(+line - 1, 0);
 
